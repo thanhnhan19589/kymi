@@ -1,0 +1,2689 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KYMI Hotel — Hệ thống Quản lý Nhân sự & Vận hành Khách sạn</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0f1216;
+      --bg-surface: #171b22;
+      --bg-elevated: #1f2530;
+      --border-line: #2a3241;
+      --accent-gold: #f59e0b;
+      --accent-emerald: #10b981;
+      --accent-sky: #38bdf8;
+      --accent-rose: #f43f5e;
+      --accent-violet: #a855f7;
+    }
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    body {
+      background-color: var(--bg-base);
+      color: #f3f4f6;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    .kymi-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-line);
+      border-radius: 16px;
+    }
+    .kymi-input {
+      background-color: #11151b;
+      border: 1px solid #2e3748;
+      border-radius: 10px;
+      color: #f3f4f6;
+      transition: all 0.15s ease;
+    }
+    .kymi-input:focus {
+      outline: none;
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes pulseScan {
+      0%, 100% { transform: translateY(0%); opacity: 0.85; }
+      50% { transform: translateY(220px); opacity: 1; }
+    }
+    .scan-laser {
+      animation: pulseScan 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-24">
+
+  <!-- Toast Container -->
+  <div id="toastBox" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-11/12 max-w-md"></div>
+
+  <!-- Top Header -->
+  <header class="sticky top-0 z-30 bg-[#12161c]/95 backdrop-blur border-b border-[#262d3b] px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <button id="btnBrandHome" type="button" class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-slate-950 font-extrabold text-xs flex items-center justify-center tracking-wider shadow-md hover:opacity-95 transition">
+          KYMI
+        </button>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 id="topModuleTitle" class="text-base sm:text-lg font-bold text-white tracking-tight">Công việc & AI Đánh giá</h1>
+            <span class="hidden sm:inline-block text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold">40 Phòng · Đà Lạt</span>
+          </div>
+          <p id="topModuleSubtitle" class="text-xs text-slate-400">Quản lý tiến độ, báo cáo hình ảnh & chấm điểm chất lượng tự động bằng AI</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div class="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-[#181d26] border border-[#283140] text-xs">
+          <span class="text-slate-400">Công suất phòng: <strong id="headerOccupancyRate" class="text-emerald-400">45%</strong></span>
+          <span class="text-slate-600">|</span>
+          <span class="text-slate-400">Tiến độ việc: <strong id="headerTaskProgress" class="text-amber-400">62%</strong></span>
+        </div>
+
+        <button id="btnOpenLoginSwitch" type="button" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1d232e] border border-[#2f384a] hover:border-amber-500/60 transition">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <span id="currentUserBadgeName" class="text-xs sm:text-sm font-semibold text-white">Hoàng Yến</span>
+          <span id="currentUserBadgeRole" class="text-[11px] text-amber-400 hidden sm:inline">(Quản lý KS)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 pt-5 space-y-6">
+
+    <!-- ======================================================================= -->
+    <!-- PHÂN HỆ 1: CÔNG VIỆC (Checklist, Báo cáo Ảnh, AI Đánh giá chất lượng)    -->
+    <!-- ======================================================================= -->
+    <section id="sec-congviec" class="space-y-5">
+      <!-- KPI Row -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="kymi-card p-4">
+          <div class="text-xs text-slate-400">Tổng công việc trong ngày</div>
+          <div class="flex items-baseline justify-between mt-1">
+            <div id="taskKpiTotal" class="text-2xl sm:text-3xl font-extrabold text-white">8</div>
+            <span id="taskKpiCompletedLabel" class="text-xs text-emerald-400 font-semibold">5 hoàn thành</span>
+          </div>
+        </div>
+        <div class="kymi-card p-4">
+          <div class="text-xs text-slate-400">Tiến độ Checklist toàn KS</div>
+          <div class="flex items-baseline justify-between mt-1">
+            <div id="taskKpiChecklistPct" class="text-2xl sm:text-3xl font-extrabold text-amber-400">68%</div>
+            <span id="taskKpiChecklistCount" class="text-xs text-slate-400">17/25 mục</span>
+          </div>
+        </div>
+        <div class="kymi-card p-4">
+          <div class="text-xs text-slate-400">Báo cáo hình ảnh đã gửi</div>
+          <div class="flex items-baseline justify-between mt-1">
+            <div id="taskKpiPhotoCount" class="text-2xl sm:text-3xl font-extrabold text-sky-400">6</div>
+            <span class="text-xs text-sky-300">100% có ảnh thực tế</span>
+          </div>
+        </div>
+        <div class="kymi-card p-4">
+          <div class="text-xs text-slate-400">Điểm chất lượng AI trung bình</div>
+          <div class="flex items-baseline justify-between mt-1">
+            <div id="taskKpiAiAvg" class="text-2xl sm:text-3xl font-extrabold text-violet-400">92.4</div>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-semibold">AI Vision v2</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar Lọc & Tạo công việc -->
+      <div class="kymi-card p-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" data-task-dept="all" class="task-dept-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950">
+            Tất cả bộ phận
+          </button>
+          <button type="button" data-task-dept="Buồng phòng" class="task-dept-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#1f2530] text-slate-300 hover:text-white">
+            Buồng phòng
+          </button>
+          <button type="button" data-task-dept="Lễ tân" class="task-dept-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#1f2530] text-slate-300 hover:text-white">
+            Lễ tân
+          </button>
+          <button type="button" data-task-dept="Kỹ thuật & Bảo trì" class="task-dept-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#1f2530] text-slate-300 hover:text-white">
+            Kỹ thuật & Bảo trì
+          </button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="taskStatusFilter" class="kymi-input text-xs px-3 py-2">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="pending">Đang thực hiện</option>
+            <option value="ai_reviewed">Đã chấm điểm AI</option>
+            <option value="completed">Hoàn thành</option>
+          </select>
+          <button id="btnOpenNewTaskModal" type="button" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition">
+            + Giao công việc mới
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Grid: Danh sách Checklist Công việc (Trái) & Trung tâm AI Đánh giá bằng Hình ảnh (Phải) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- Cột trái: Danh sách công việc & Checklist -->
+        <div class="lg:col-span-7 space-y-3" id="taskListContainer"></div>
+
+        <!-- Cột phải: Khung Gửi Báo cáo Hình ảnh & AI Chấm điểm Tự động -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="kymi-card p-5 space-y-4 sticky top-20 border-violet-500/40">
+            <div class="flex items-center justify-between border-b border-[#283140] pb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-300 border border-violet-500/40 text-[11px] font-bold">KYMI AI INSPECTOR</span>
+                  <h3 class="text-base font-bold text-white">Báo cáo Ảnh & AI Đánh giá</h3>
+                </div>
+                <p id="aiPanelSelectedTaskLabel" class="text-xs text-slate-400 mt-1">Đang chọn: Dọn phòng Checkout Love 101</p>
+              </div>
+            </div>
+
+            <!-- Chọn mẫu ảnh thực tế hoặc tải ảnh từ máy -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold text-slate-300">1. Hình ảnh báo cáo thực tế tại phòng/khu vực</label>
+                <label for="inputTaskPhotoUpload" class="text-xs font-semibold text-amber-400 hover:underline cursor-pointer">
+                  + Tải ảnh từ thiết bị
+                </label>
+                <input id="inputTaskPhotoUpload" type="file" accept="image/*" class="hidden" />
+              </div>
+
+              <!-- Các mẫu cảnh báo cáo nhanh để test AI -->
+              <div class="grid grid-cols-3 gap-2">
+                <button type="button" data-sample-photo="standard_98" class="sample-photo-btn p-2 rounded-xl bg-[#1f2530] border border-violet-500/50 text-left hover:border-amber-400 transition">
+                  <div class="text-[11px] font-bold text-emerald-400">Mẫu Chuẩn 5★</div>
+                  <div class="text-[10px] text-slate-400">Ga giường phẳng, đủ khăn</div>
+                </button>
+                <button type="button" data-sample-photo="warning_79" class="sample-photo-btn p-2 rounded-xl bg-[#1f2530] border border-[#2e3748] text-left hover:border-amber-400 transition">
+                  <div class="text-[11px] font-bold text-amber-400">Mẫu Thiếu Sót</div>
+                  <div class="text-[10px] text-slate-400">Khăn lệch, thiếu 1 nước</div>
+                </button>
+                <button type="button" data-sample-photo="issue_62" class="sample-photo-btn p-2 rounded-xl bg-[#1f2530] border border-[#2e3748] text-left hover:border-amber-400 transition">
+                  <div class="text-[11px] font-bold text-rose-400">Mẫu Cần Làm Lại</div>
+                  <div class="text-[10px] text-slate-400">Sàn ướt, ga nhăn</div>
+                </button>
+              </div>
+
+              <!-- Khung hiển thị hình ảnh & tia quét AI -->
+              <div class="relative rounded-xl overflow-hidden bg-[#11151b] border border-[#2e3748] h-56 flex items-center justify-center">
+                <div id="aiPhotoPreviewCanvas" class="w-full h-full flex items-center justify-center"></div>
+                <div id="aiScanOverlay" class="hidden absolute inset-0 bg-violet-950/40 backdrop-blur-[1px] flex flex-col items-center justify-center">
+                  <div class="w-full h-1 bg-gradient-to-r from-transparent via-violet-400 to-transparent absolute top-0 scan-laser"></div>
+                  <div class="px-4 py-2 rounded-full bg-slate-950/90 border border-violet-400/50 text-xs font-bold text-violet-200">
+                    🤖 AI đang phân tích tiêu chuẩn buồng phòng KYMI...
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nút bấm chạy AI đánh giá -->
+            <div class="flex gap-2">
+              <button id="btnRunAiEvaluation" type="button" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg transition flex items-center justify-center gap-2">
+                <span>✨ Chấm điểm & Đánh giá bằng AI</span>
+              </button>
+              <button id="btnSubmitTaskReport" type="button" class="px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm transition">
+                Gửi báo cáo
+              </button>
+            </div>
+
+            <!-- Kết quả phân tích chi tiết của AI -->
+            <div id="aiEvaluationResultBox" class="p-4 rounded-xl bg-[#11151b] border border-[#2a3241] space-y-3"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- PHÂN HỆ 2: LỊCH CA (Theo Tuần / Tháng, Xếp ca, Báo cáo Đi trễ / Về sớm) -->
+    <!-- ======================================================================= -->
+    <section id="sec-lichca" class="space-y-5 hidden">
+      <!-- Top Controls: Chế độ xem Tuần | Tháng | Báo cáo Đi trễ & Về sớm -->
+      <div class="kymi-card p-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5 bg-[#11151b] p-1 rounded-xl border border-[#2a3241]">
+          <button type="button" data-sched-mode="week" class="sched-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950">
+            Lịch Tuần
+          </button>
+          <button type="button" data-sched-mode="month" class="sched-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white">
+            Sơ đồ Tháng (Tháng 11)
+          </button>
+          <button type="button" data-sched-mode="attendance" class="sched-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white">
+            Báo cáo Đi trễ / Về sớm
+          </button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="schedDeptFilter" class="kymi-input text-xs px-3 py-2">
+            <option value="all">Tất cả bộ phận (12 nhân sự)</option>
+            <option value="Lễ tân">Lễ tân</option>
+            <option value="Buồng phòng">Buồng phòng</option>
+            <option value="Kỹ thuật & Bảo trì">Kỹ thuật & Bảo trì</option>
+            <option value="Quản lý & Kho">Quản lý & Kho</option>
+          </select>
+          <button id="btnAutoArrangeShifts" type="button" class="px-3.5 py-2 rounded-xl bg-[#1f2530] hover:bg-[#28303e] border border-[#354052] text-xs font-semibold text-amber-400">
+            ⚡ Tự động phủ kín ca trống
+          </button>
+          <button id="btnPublishSchedule" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
+            ✅ Duyệt & Công bố lịch
+          </button>
+        </div>
+      </div>
+
+      <!-- Chú thích các ca chuẩn của Khách sạn KYMI -->
+      <div class="flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-slate-400">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-sky-500/30 border border-sky-400"></span> <strong>Ca Sáng (S):</strong> 06:00 – 14:00</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-500/30 border border-amber-400"></span> <strong>Ca Chiều (C):</strong> 14:00 – 22:00</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-violet-500/30 border border-violet-400"></span> <strong>Ca Đêm (Đ):</strong> 22:00 – 06:00</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500/30 border border-emerald-400"></span> <strong>Hành chính (HC):</strong> 08:00 – 17:30</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-800 border border-slate-700"></span> <strong>OFF:</strong> Nghỉ phép/Tuần</span>
+        </div>
+        <span>💡 Bấm trực tiếp vào từng ô để đổi ca cho nhân viên</span>
+      </div>
+
+      <!-- Khung 1: Bảng Lịch Tuần -->
+      <div id="schedWeekContainer" class="kymi-card overflow-hidden">
+        <div class="p-4 border-b border-[#262d3b] flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white">Bảng Phân Ca Tuần (09/11/2026 – 15/11/2026)</h3>
+            <p id="schedPublishStatusText" class="text-xs text-emerald-400 mt-0.5">Đã duyệt lần cuối lúc 08:30 08/11 bởi Quản lý Hoàng Yến</p>
+          </div>
+          <span class="text-xs text-slate-400">Bấm vào ô để đổi: S → C → Đ → HC → OFF</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[780px] text-xs">
+            <thead>
+              <tr class="bg-[#12161c] text-slate-300 border-b border-[#262d3b]">
+                <th class="p-3 w-52">Nhân sự & Bộ phận</th>
+                <th class="p-2.5 text-center">T2<br><span class="text-[10px] text-slate-500">09/11</span></th>
+                <th class="p-2.5 text-center">T3<br><span class="text-[10px] text-slate-500">10/11</span></th>
+                <th class="p-2.5 text-center">T4<br><span class="text-[10px] text-slate-500">11/11</span></th>
+                <th class="p-2.5 text-center">T5<br><span class="text-[10px] text-slate-500">12/11</span></th>
+                <th class="p-2.5 text-center">T6<br><span class="text-[10px] text-slate-500">13/11</span></th>
+                <th class="p-2.5 text-center">T7<br><span class="text-[10px] text-slate-500">14/11</span></th>
+                <th class="p-2.5 text-center">CN<br><span class="text-[10px] text-slate-500">15/11</span></th>
+                <th class="p-2.5 text-center">Tổng ca</th>
+              </tr>
+            </thead>
+            <tbody id="schedWeekTableBody" class="divide-y divide-[#232a36]"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Khung 2: Sơ đồ Ca Làm Theo Tháng (30 ngày) -->
+      <div id="schedMonthContainer" class="kymi-card overflow-hidden hidden">
+        <div class="p-4 border-b border-[#262d3b] flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base font-bold text-white">Sơ Đồ Ca Làm Tháng 11/2026 (30 Ngày)</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Bấm vào bất kỳ ô ngày nào để chuyển đổi ca làm của nhân viên trong tháng</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="px-2.5 py-1 rounded-lg bg-[#1f2530] text-slate-300">Đủ quân số: <strong>28/30 ngày</strong></span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-[11px] min-w-[1150px]">
+            <thead id="schedMonthTableHead"></thead>
+            <tbody id="schedMonthTableBody" class="divide-y divide-[#232a36]"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Khung 3: Báo cáo Đi trễ / Về sớm & Chấm công -->
+      <div id="schedAttendanceContainer" class="space-y-4 hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="kymi-card p-4 border-rose-500/30">
+            <div class="text-xs text-slate-400">Tổng lượt đi trễ trong tháng</div>
+            <div id="attTotalLateCount" class="text-2xl font-extrabold text-rose-400 mt-1">5 lượt (168 phút)</div>
+          </div>
+          <div class="kymi-card p-4 border-amber-500/30">
+            <div class="text-xs text-slate-400">Tổng lượt về sớm</div>
+            <div id="attTotalEarlyCount" class="text-2xl font-extrabold text-amber-400 mt-1">2 lượt (75 phút)</div>
+          </div>
+          <div class="kymi-card p-4 border-emerald-500/30">
+            <div class="text-xs text-slate-400">Tỷ lệ đúng giờ toàn khách sạn</div>
+            <div class="text-2xl font-extrabold text-emerald-400 mt-1">94.2%</div>
+          </div>
+        </div>
+
+        <div class="kymi-card p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-base font-bold text-white">Nhật ký Đi trễ & Về sớm chi tiết</h3>
+            <button id="btnAddAttendanceRecord" type="button" class="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">
+              + Ghi nhận vi phạm mới
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs min-w-[680px]">
+              <thead>
+                <tr class="bg-[#12161c] text-slate-400 border-b border-[#262d3b]">
+                  <th class="p-3">Ngày & Ca</th>
+                  <th class="p-3">Nhân viên</th>
+                  <th class="p-3">Bộ phận</th>
+                  <th class="p-3">Loại vi phạm</th>
+                  <th class="p-3">Giờ chuẩn / Thực tế</th>
+                  <th class="p-3">Số phút lệch</th>
+                  <th class="p-3">Trạng thái xử lý</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceReportTableBody" class="divide-y divide-[#232a36]"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- PHÂN HỆ 3: SƠ ĐỒ 40 PHÒNG KHÁCH SẠN KYMI (Đặt phòng & Bán phòng)        -->
+    <!-- ======================================================================= -->
+    <section id="sec-sodophong" class="space-y-5 hidden">
+      <!-- Thống kê nhanh 40 phòng -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        <div class="kymi-card p-3.5">
+          <div class="text-[11px] text-slate-400">Tổng số phòng</div>
+          <div class="text-2xl font-extrabold text-white mt-0.5">40</div>
+          <div class="text-[10px] text-slate-500">5 hạng phòng</div>
+        </div>
+        <div class="kymi-card p-3.5 border-emerald-500/30">
+          <div class="text-[11px] text-emerald-400 font-medium">Phòng trống sạch</div>
+          <div id="roomStatAvailable" class="text-2xl font-extrabold text-emerald-400 mt-0.5">20</div>
+          <div class="text-[10px] text-slate-400">Sẵn sàng bán</div>
+        </div>
+        <div class="kymi-card p-3.5 border-rose-500/30">
+          <div class="text-[11px] text-rose-400 font-medium">Đang có khách ở</div>
+          <div id="roomStatOccupied" class="text-2xl font-extrabold text-rose-400 mt-0.5">11</div>
+          <div class="text-[10px] text-slate-400">Đang lưu trú</div>
+        </div>
+        <div class="kymi-card p-3.5 border-sky-500/30">
+          <div class="text-[11px] text-sky-400 font-medium">Đã đặt trước</div>
+          <div id="roomStatReserved" class="text-2xl font-extrabold text-sky-400 mt-0.5">5</div>
+          <div class="text-[10px] text-slate-400">Chờ khách nhận</div>
+        </div>
+        <div class="kymi-card p-3.5 border-amber-500/30">
+          <div class="text-[11px] text-amber-400 font-medium">Chờ dọn buồng</div>
+          <div id="roomStatCleaning" class="text-2xl font-extrabold text-amber-400 mt-0.5">4</div>
+          <div class="text-[10px] text-slate-400">Vừa trả phòng</div>
+        </div>
+        <div class="kymi-card p-3.5 border-violet-500/30">
+          <div class="text-[11px] text-violet-300 font-medium">Doanh thu ca hiện tại</div>
+          <div id="roomStatRevenue" class="text-lg sm:text-xl font-extrabold text-violet-300 mt-1">18.450.000đ</div>
+          <div class="text-[10px] text-slate-400">Bán phòng + Dịch vụ</div>
+        </div>
+      </div>
+
+      <!-- Bộ lọc theo 5 Hạng phòng chuẩn: Love (8), Hill (8), Honey (8), Team (5), Happy (11) -->
+      <div class="kymi-card p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" data-room-cat="all" class="room-cat-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950">
+              Tất cả (40 phòng)
+            </button>
+            <button type="button" data-room-cat="Love" class="room-cat-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#1f2530] text-pink-300 border border-pink-500/30 hover:border-pink-400">
+              💖 Love (8 phòng)
+            </button>
+            <button type="button" data-room-cat="Hill" class="room-cat-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#1f2530] text-emerald-300 border border-emerald-500/30 hover:border-emerald-400">
+              🌲 Hill (8 phòng)
+            </button>
+            <button type="button" data-room-cat="Honey" class="room-cat-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#1f2530] text-amber-300 border border-amber-500/30 hover:border-amber-400">
+              🍯 Honey (8 phòng)
+            </button>
+            <button type="button" data-room-cat="Team" class="room-cat-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#1f2530] text-sky-300 border border-sky-500/30 hover:border-sky-400">
+              👥 Team (5 phòng)
+            </button>
+            <button type="button" data-room-cat="Happy" class="room-cat-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#1f2530] text-violet-300 border border-violet-500/30 hover:border-violet-400">
+              🌈 Happy (11 phòng)
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <select id="roomStateFilter" class="kymi-input text-xs px-3 py-2">
+              <option value="all">Mọi trạng thái</option>
+              <option value="available">Trống sạch</option>
+              <option value="occupied">Đang ở</option>
+              <option value="reserved">Đã đặt trước</option>
+              <option value="cleaning">Chờ dọn</option>
+            </select>
+            <input id="roomSearchInput" type="text" placeholder="Tìm số phòng / tên khách..." class="kymi-input text-xs px-3 py-2 w-44" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Lưới 40 phòng khách sạn -->
+      <div id="hotelRoomsGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 gap-3"></div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- PHÂN HỆ 4: KHO KHÁCH SẠN (AI OCR Đọc Hoá Đơn Bằng Ảnh & Xuất Nhập Tồn)  -->
+    <!-- ======================================================================= -->
+    <section id="sec-kho" class="space-y-5 hidden">
+      <!-- KPI Kho -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="kymi-card p-4">
+          <div class="text-xs text-slate-400">Tổng danh mục vật tư & Minibar</div>
+          <div id="invKpiTotalSkus" class="text-2xl font-extrabold text-white mt-1">10 mặt hàng</div>
+        </div>
+        <div class="kymi-card p-4 border-rose-500/30">
+          <div class="text-xs text-rose-400">Cảnh báo sắp hết / Dưới định mức</div>
+          <div id="invKpiLowStock" class="text-2xl font-extrabold text-rose-400 mt-1">3 mặt hàng</div>
+        </div>
+        <div class="kymi-card p-4 border-emerald-500/30">
+          <div class="text-xs text-emerald-400">Tổng giá trị tồn kho hiện tại</div>
+          <div id="invKpiTotalValue" class="text-xl sm:text-2xl font-extrabold text-emerald-400 mt-1">24.680.000đ</div>
+        </div>
+        <div class="kymi-card p-4 border-sky-500/30">
+          <div class="text-xs text-sky-400">Hoá đơn nhập bằng AI OCR</div>
+          <div id="invKpiOcrCount" class="text-2xl font-extrabold text-sky-400 mt-1">12 phiếu</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- Cột trái: Máy quét AI OCR Đọc & Nhập Hoá Đơn Tự Động Bằng Hình Ảnh -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="kymi-card p-5 space-y-4 border-sky-500/40">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[11px] font-bold">AI INVOICE OCR v2</span>
+                  <span id="ocrStatusPill" class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold">Sẵn sàng nhận ảnh</span>
+                </div>
+                <h3 class="text-base font-bold text-white mt-1">Tự động đọc & nhập hoá đơn bằng hình ảnh</h3>
+              </div>
+              <label for="inputOcrInvoiceFile" class="px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-extrabold cursor-pointer shadow transition flex items-center gap-1.5">
+                <span>📷 Tải / Chụp ảnh hoá đơn</span>
+              </label>
+              <input id="inputOcrInvoiceFile" type="file" accept="image/*" class="hidden" />
+            </div>
+
+            <!-- Vùng Kéo-Thả hoặc Chọn Ảnh từ máy / Dán ảnh Ctrl+V -->
+            <div id="ocrDropZone" class="p-3 rounded-xl border-2 border-dashed border-sky-500/40 bg-[#11151b] hover:border-sky-400 transition text-center space-y-1 cursor-pointer">
+              <div class="text-xs font-semibold text-sky-300">📥 Bấm vào đây để chọn ảnh hoá đơn từ máy, Kéo-thả ảnh, hoặc nhấn <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300">Ctrl+V</kbd> để dán ảnh</div>
+              <div class="text-[11px] text-slate-400">Tự động nhận diện chữ trên ảnh hoá đơn, cho phép chỉnh sửa số lượng/đơn giá hoặc tự động tạo mã vật tư mới nếu chưa có trong kho</div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+              <span>Hoặc thử nhanh 3 mẫu hoá đơn nhà cung cấp:</span>
+              <label class="inline-flex items-center gap-1.5 text-emerald-400 font-semibold cursor-pointer">
+                <input id="chkAutoImportAfterScan" type="checkbox" checked class="w-3.5 h-3.5 accent-emerald-500" />
+                <span>Tự động nhập thẳng vào kho khi quét xong</span>
+              </label>
+            </div>
+
+            <!-- 3 Mẫu hoá đơn thực tế để thử nghiệm ngay -->
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" data-ocr-preset="inv_amenities" class="ocr-preset-btn p-2.5 rounded-xl bg-[#1f2530] border border-sky-500/60 text-left hover:border-sky-400 transition">
+                <div class="text-xs font-bold text-sky-300">HĐ Đồ Amenities</div>
+                <div class="text-[10px] text-slate-400">Bàn chải, Dầu gội, Dao cạo</div>
+              </button>
+              <button type="button" data-ocr-preset="inv_minibar" class="ocr-preset-btn p-2.5 rounded-xl bg-[#1f2530] border border-[#2e3748] text-left hover:border-sky-400 transition">
+                <div class="text-xs font-bold text-amber-300">HĐ Nước & Minibar</div>
+                <div class="text-[10px] text-slate-400">Nước suối, Bò húc, Mì ly</div>
+              </button>
+              <button type="button" data-ocr-preset="inv_linen" class="ocr-preset-btn p-2.5 rounded-xl bg-[#1f2530] border border-[#2e3748] text-left hover:border-sky-400 transition">
+                <div class="text-xs font-bold text-emerald-300">HĐ Khăn & Giặt ủi</div>
+                <div class="text-[10px] text-slate-400">Khăn tắm, Nước giặt, Tinh dầu</div>
+              </button>
+            </div>
+
+            <!-- Hình ảnh hoá đơn (Ảnh tải lên thực tế HOẶC mẫu trực quan) -->
+            <div class="relative rounded-xl overflow-hidden bg-[#11151b] border border-[#2e3748] p-3">
+              <div id="ocrInvoiceVisualPreview"></div>
+              <div id="ocrScanningLaser" class="hidden absolute inset-0 bg-sky-950/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 p-4 text-center">
+                <div class="w-full h-1 bg-gradient-to-r from-transparent via-sky-400 to-transparent absolute top-0 scan-laser"></div>
+                <div id="ocrProgressText" class="px-4 py-2 rounded-full bg-slate-950 border border-sky-400 text-xs font-bold text-sky-300 shadow-lg">
+                  🔍 AI OCR đang nhận diện chữ & bóc tách bảng hàng hoá...
+                </div>
+              </div>
+            </div>
+
+            <!-- Nút thao tác Quét & Xác nhận Nhập kho -->
+            <div class="flex flex-wrap gap-2">
+              <button id="btnRunOcrScan" type="button" class="flex-1 py-2.5 px-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs sm:text-sm transition">
+                🔍 Quét AI đọc dữ liệu hoá đơn
+              </button>
+              <button id="btnAddOcrRow" type="button" class="px-3 py-2.5 rounded-xl bg-[#1f2530] hover:bg-[#2a3342] border border-[#364154] text-slate-200 font-semibold text-xs transition">
+                + Thêm dòng
+              </button>
+              <button id="btnConfirmOcrImport" type="button" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm transition shadow-lg">
+                + Nhập vào kho
+              </button>
+            </div>
+
+            <!-- Bảng dữ liệu sau khi AI OCR bóc tách (Cho phép chỉnh sửa trực tiếp từng dòng) -->
+            <div id="ocrExtractedTableContainer" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Cột phải: Bảng Quản lý Xuất - Nhập - Tồn & Thẻ kho -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="kymi-card p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-base font-bold text-white">Bảng Quản lý Xuất – Nhập – Tồn Kho KYMI</h3>
+              <div class="flex items-center gap-2">
+                <button id="btnOpenManualStockModal" type="button" class="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">
+                  ⇅ Xuất / Nhập kho thủ công
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs min-w-[620px]">
+                <thead>
+                  <tr class="bg-[#12161c] text-slate-400 border-b border-[#262d3b]">
+                    <th class="p-2.5">Mã & Tên vật tư</th>
+                    <th class="p-2.5">Nhóm</th>
+                    <th class="p-2.5 text-center">Tồn đầu</th>
+                    <th class="p-2.5 text-center text-emerald-400">Tổng Nhập</th>
+                    <th class="p-2.5 text-center text-amber-400">Tổng Xuất</th>
+                    <th class="p-2.5 text-center font-bold text-white">Tồn cuối</th>
+                    <th class="p-2.5 text-right">Đơn giá</th>
+                    <th class="p-2.5 text-center">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="inventoryStockTableBody" class="divide-y divide-[#232a36]"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Lịch sử giao dịch Xuất / Nhập kho -->
+          <div class="kymi-card p-4 space-y-2.5">
+            <h4 class="text-sm font-bold text-white">Nhật ký Xuất – Nhập kho gần nhất</h4>
+            <div id="inventoryLogsContainer" class="divide-y divide-[#232a36] text-xs max-h-60 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- PHÂN HỆ 5: TÀI KHOẢN (Quản lý tất cả tài khoản nhân viên khách sạn)     -->
+    <!-- ======================================================================= -->
+    <section id="sec-taikhoan" class="space-y-5 hidden">
+      <div class="kymi-card p-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-white">Quản lý Tài khoản Nhân sự Khách sạn KYMI</h2>
+          <p class="text-xs text-slate-400">Phân quyền truy cập, đặt lại mã PIN, liên kết thông báo Zalo OA và quản lý trạng thái làm việc</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <input id="accountSearchInput" type="text" placeholder="Tìm tên, SĐT, bộ phận..." class="kymi-input text-xs px-3 py-2 w-48" />
+          <button id="btnOpenAddAccountModal" type="button" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">
+            + Thêm tài khoản nhân viên
+          </button>
+        </div>
+      </div>
+
+      <div id="accountsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: ĐẶT PHÒNG / BÁN PHÒNG / TRẢ PHÒNG (Sơ đồ 40 phòng KYMI)          -->
+  <!-- ========================================================================= -->
+  <div id="modalRoomOperation" class="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-lg kymi-card p-5 space-y-4 shadow-2xl my-8">
+      <div class="flex items-center justify-between border-b border-[#283140] pb-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="roomModalCatBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-500/20 text-pink-300">Hạng Love</span>
+            <h3 id="roomModalTitle" class="text-lg font-extrabold text-white">Phòng L101</h3>
+          </div>
+          <p id="roomModalPriceInfo" class="text-xs text-slate-400 mt-0.5">Giá theo giờ: 250.000đ/2h · Qua đêm: 650.000đ · Theo ngày: 850.000đ</p>
+        </div>
+        <button id="btnCloseRoomModal" type="button" class="w-8 h-8 rounded-lg bg-[#1f2530] text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <form id="formRoomBooking" class="space-y-3 text-xs sm:text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Trạng thái phòng</label>
+            <select id="modalRoomStatusSelect" class="kymi-input w-full px-3 py-2 font-semibold">
+              <option value="available">🟢 Trống sạch (Sẵn sàng bán)</option>
+              <option value="occupied">🔴 Đang có khách ở (Nhận phòng)</option>
+              <option value="reserved">🔵 Đã đặt trước (Booking)</option>
+              <option value="cleaning">🟡 Chờ dọn buồng</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Hình thức lưu trú</label>
+            <select id="modalRoomStayType" class="kymi-input w-full px-3 py-2">
+              <option value="Qua đêm">Qua đêm</option>
+              <option value="Theo ngày">Theo ngày (Day/Night)</option>
+              <option value="Nghỉ giờ (2h)">Nghỉ giờ (2h đầu)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Tên khách hàng</label>
+            <input id="modalGuestName" type="text" placeholder="VD: Anh Minh - Chị Lan" class="kymi-input w-full px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Số điện thoại khách</label>
+            <input id="modalGuestPhone" type="text" placeholder="VD: 0909 123 456" class="kymi-input w-full px-3 py-2" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Số đêm / Số giờ</label>
+            <input id="modalStayUnits" type="number" min="1" max="30" value="1" class="kymi-input w-full px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Phụ thu Minibar / Dịch vụ (đ)</label>
+            <input id="modalMinibarFee" type="number" min="0" step="10000" value="0" class="kymi-input w-full px-3 py-2" />
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-[#11151b] border border-[#2a3241] flex items-center justify-between">
+          <span class="text-xs text-slate-400">Tổng tạm tính hoá đơn phòng:</span>
+          <span id="modalCalculatedTotal" class="text-lg font-extrabold text-amber-400">650.000đ</span>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#283140]">
+          <button id="btnQuickCheckoutRoom" type="button" class="px-3.5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs">
+            💳 Trả phòng (Checkout & Thu tiền)
+          </button>
+          <div class="flex items-center gap-2">
+            <button id="btnQuickCleanDone" type="button" class="px-3 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-xs">
+              ✨ Báo đã dọn sạch
+            </button>
+            <button type="submit" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">
+              Lưu / Bán phòng
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: GIAO CÔNG VIỆC MỚI                                               -->
+  <!-- ========================================================================= -->
+  <div id="modalCreateTask" class="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-md kymi-card p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#283140] pb-3">
+        <h3 class="text-base font-bold text-white">Giao công việc & Checklist mới</h3>
+        <button id="btnCloseNewTaskModal" type="button" class="w-8 h-8 rounded-lg bg-[#1f2530] text-slate-400 hover:text-white">✕</button>
+      </div>
+      <form id="formCreateNewTask" class="space-y-3 text-xs sm:text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Tiêu đề công việc</label>
+          <input id="newTaskTitle" type="text" placeholder="VD: Tổng vệ sinh & 셋업 phòng Honey 302" class="kymi-input w-full px-3 py-2" required />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Bộ phận</label>
+            <select id="newTaskDept" class="kymi-input w-full px-3 py-2">
+              <option value="Buồng phòng">Buồng phòng</option>
+              <option value="Lễ tân">Lễ tân</option>
+              <option value="Kỹ thuật & Bảo trì">Kỹ thuật & Bảo trì</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Nhân sự phụ trách</label>
+            <select id="newTaskAssignee" class="kymi-input w-full px-3 py-2"></select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Các mục Checklist (mỗi mục cách nhau dấu phẩy)</label>
+          <input id="newTaskChecklistInput" type="text" value="Thay ga gối phẳng, Lau kính & Bồn tắm, Bổ sung 2 nước suối + Amenities" class="kymi-input w-full px-3 py-2" required />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="submit" class="px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">
+            Tạo & Giao việc
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 3: XUẤT / NHẬP KHO THỦ CÔNG                                         -->
+  <!-- ========================================================================= -->
+  <div id="modalManualStock" class="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-md kymi-card p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#283140] pb-3">
+        <h3 class="text-base font-bold text-white">Phiếu Xuất / Nhập Kho Thủ Công</h3>
+        <button id="btnCloseManualStockModal" type="button" class="w-8 h-8 rounded-lg bg-[#1f2530] text-slate-400 hover:text-white">✕</button>
+      </div>
+      <form id="formManualStock" class="space-y-3 text-xs sm:text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Chọn mặt hàng</label>
+          <select id="manualStockItemSelect" class="kymi-input w-full px-3 py-2"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Loại giao dịch</label>
+            <select id="manualStockType" class="kymi-input w-full px-3 py-2">
+              <option value="import">🟢 Nhập kho (+)</option>
+              <option value="export">🟠 Xuất dùng buồng/quầy (-)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Số lượng</label>
+            <input id="manualStockQty" type="number" min="1" value="10" class="kymi-input w-full px-3 py-2" required />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Ghi chú phiếu</label>
+          <input id="manualStockNote" type="text" placeholder="VD: Xuất cho tổ Buồng phòng tầng 2" class="kymi-input w-full px-3 py-2" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="submit" class="px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">
+            Xác nhận cập nhật kho
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 4: THÊM / SỬA TÀI KHOẢN NHÂN VIÊN                                   -->
+  <!-- ========================================================================= -->
+  <div id="modalStaffAccount" class="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-md kymi-card p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#283140] pb-3">
+        <h3 id="accountModalHeader" class="text-base font-bold text-white">Thêm tài khoản nhân sự mới</h3>
+        <button id="btnCloseAccountModal" type="button" class="w-8 h-8 rounded-lg bg-[#1f2530] text-slate-400 hover:text-white">✕</button>
+      </div>
+      <form id="formStaffAccount" class="space-y-3 text-xs sm:text-sm">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Họ và tên</label>
+            <input id="accInputName" type="text" placeholder="VD: Nguyễn Thu Hà" class="kymi-input w-full px-3 py-2" required />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Tên đăng nhập (Username)</label>
+            <input id="accInputUsername" type="text" placeholder="VD: thuha.kymi" class="kymi-input w-full px-3 py-2" required />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Bộ phận</label>
+            <select id="accInputDept" class="kymi-input w-full px-3 py-2">
+              <option value="Lễ tân">Lễ tân</option>
+              <option value="Buồng phòng">Buồng phòng</option>
+              <option value="Kỹ thuật & Bảo trì">Kỹ thuật & Bảo trì</option>
+              <option value="Quản lý & Kho">Quản lý & Kho</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Chức vụ / Quyền hạn</label>
+            <select id="accInputRole" class="kymi-input w-full px-3 py-2">
+              <option value="Nhân viên">Nhân viên</option>
+              <option value="Trưởng ca">Trưởng ca</option>
+              <option value="Giám sát Buồng">Giám sát Buồng</option>
+              <option value="Quản lý KS">Quản lý KS (Admin)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Số điện thoại</label>
+            <input id="accInputPhone" type="text" placeholder="0908 xxx xxx" class="kymi-input w-full px-3 py-2" required />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Mã PIN đăng nhập</label>
+            <input id="accInputPin" type="text" value="1234" maxlength="6" class="kymi-input w-full px-3 py-2 font-mono" required />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="submit" class="px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">
+            Lưu tài khoản
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- BOTTOM NAVIGATION (5 Phân hệ: Công việc | Lịch ca | Sơ đồ phòng | Kho | Tài khoản) -->
+  <!-- ========================================================================= -->
+  <nav class="fixed bottom-0 inset-x-0 z-30 bg-[#12161c]/95 backdrop-blur border-t border-[#262d3b]">
+    <div class="max-w-4xl mx-auto grid grid-cols-5 h-16">
+      <button type="button" data-tab="congviec" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-amber-400 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span class="text-[11px] font-bold">Công việc</span>
+      </button>
+      <button type="button" data-tab="lichca" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="text-[11px] font-medium">Lịch ca</span>
+      </button>
+      <button type="button" data-tab="sodophong" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="text-[11px] font-medium">Sơ đồ phòng</span>
+      </button>
+      <button type="button" data-tab="kho" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <span class="text-[11px] font-medium">Kho</span>
+      </button>
+      <button type="button" data-tab="taikhoan" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        <span class="text-[11px] font-medium">Tài khoản</span>
+      </button>
+    </div>
+  </nav>
+
+  <script>
+    // =========================================================================
+    // DỮ LIỆU KHỞI TẠO HỆ THỐNG KHÁCH SẠN KYMI (40 PHÒNG, 5 PHÂN HỆ)
+    // =========================================================================
+
+    function buildInitial40Rooms() {
+      const categories = [
+        { cat: 'Love', prefix: 'L', count: 8, hourlyPrice: 250000, overnightPrice: 650000, dailyPrice: 850000, color: 'pink', desc: 'Giường tròn lãng mạn, bồn tắm đôi' },
+        { cat: 'Hill', prefix: 'HL', count: 8, hourlyPrice: 280000, overnightPrice: 750000, dailyPrice: 950000, color: 'emerald', desc: 'Ban công view đồi thông Đà Lạt' },
+        { cat: 'Honey', prefix: 'HN', count: 8, hourlyPrice: 260000, overnightPrice: 700000, dailyPrice: 900000, color: 'amber', desc: 'Tone gỗ ấm áp cho cặp đôi' },
+        { cat: 'Team', prefix: 'T', count: 5, hourlyPrice: 400000, overnightPrice: 1200000, dailyPrice: 1500000, color: 'sky', desc: '2 Giường King cho nhóm 4–6 khách' },
+        { cat: 'Happy', prefix: 'HP', count: 11, hourlyPrice: 300000, overnightPrice: 820000, dailyPrice: 1050000, color: 'violet', desc: 'Phòng gia đình tiêu chuẩn cao cấp' }
+      ];
+
+      const sampleGuests = [
+        { name: 'Anh Tuấn & Chị Mai', phone: '0903 412 889', stayType: 'Qua đêm', units: 2, minibar: 60000 },
+        { name: 'Chị Ngọc Hân', phone: '0918 220 114', stayType: 'Theo ngày', units: 1, minibar: 0 },
+        { name: 'Gia đình Anh Khôi', phone: '0989 771 230', stayType: 'Theo ngày', units: 3, minibar: 150000 },
+        { name: 'Nhóm Bạn Đà Nẵng', phone: '0935 660 912', stayType: 'Qua đêm', units: 2, minibar: 120000 },
+        { name: 'Anh Hoàng Nam', phone: '0972 118 450', stayType: 'Nghỉ giờ (2h)', units: 1, minibar: 30000 }
+      ];
+
+      const rooms = [];
+      let globalIdx = 0;
+      categories.forEach((c, catIdx) => {
+        for (let i = 1; i <= c.count; i++) {
+          globalIdx++;
+          const code = `${c.prefix}${catIdx + 1}${String(i).padStart(2, '0')}`;
+          let status = 'available';
+          let guest = null;
+
+          if (globalIdx % 4 === 1 && rooms.filter(r => r.status === 'occupied').length < 11) {
+            status = 'occupied';
+            const g = sampleGuests[globalIdx % sampleGuests.length];
+            guest = { ...g, checkInTime: '14:15' };
+          } else if (globalIdx % 7 === 0 && rooms.filter(r => r.status === 'reserved').length < 5) {
+            status = 'reserved';
+            const g = sampleGuests[(globalIdx + 1) % sampleGuests.length];
+            guest = { ...g, checkInTime: 'Dự kiến 18:00' };
+          } else if (globalIdx % 9 === 0 && rooms.filter(r => r.status === 'cleaning').length < 4) {
+            status = 'cleaning';
+          }
+
+          rooms.push({
+            id: `room_${globalIdx}`,
+            code,
+            category: c.cat,
+            hourlyPrice: c.hourlyPrice,
+            overnightPrice: c.overnightPrice,
+            dailyPrice: c.dailyPrice,
+            desc: c.desc,
+            status,
+            guest
+          });
+        }
+      });
+      return rooms;
+    }
+
+    const SHIFT_CYCLE = ['S', 'C', 'Đ', 'HC', 'OFF'];
+
+    const appState = {
+      activeTab: 'congviec',
+      taskDeptFilter: 'all',
+      taskStatusFilter: 'all',
+      selectedTaskId: 't1',
+      selectedPhotoPreset: 'standard_98',
+      customUploadedPhotoDataUrl: null,
+
+      schedMode: 'week', // 'week' | 'month' | 'attendance'
+      schedDeptFilter: 'all',
+
+      roomCatFilter: 'all',
+      roomStateFilter: 'all',
+      editingRoomId: null,
+
+      selectedOcrPreset: 'inv_amenities',
+      uploadedOcrImageDataUrl: null,
+      uploadedOcrFileName: '',
+      ocrWorkingInvoice: {
+        code: 'HĐ-AM2026-114',
+        supplier: 'Công ty TNHH Thiết bị Khách sạn Sao Việt',
+        date: '12/11/2026',
+        items: [
+          { stockId: 'k1', name: 'Bộ bàn chải + kem đánh răng tre KYMI', unit: 'Bộ', category: 'Amenities', qty: 200, price: 4500 },
+          { stockId: 'k2', name: 'Dầu gội & Sữa tắm thảo mộc 30ml', unit: 'Chai', category: 'Amenities', qty: 150, price: 6000 },
+          { stockId: 'k3', name: 'Dao cạo râu & Lược gỗ cao cấp', unit: 'Bộ', category: 'Amenities', qty: 100, price: 5200 }
+        ]
+      },
+      totalRevenue: 18450000,
+      ocrInvoiceCounter: 12,
+
+      // Danh sách 12 nhân viên khách sạn KYMI (phục vụ Tài khoản, Lịch ca, Công việc)
+      staffAccounts: [
+        { id: 's1', name: 'Hoàng Yến', username: 'yen.quanly', dept: 'Quản lý & Kho', role: 'Quản lý KS', phone: '0909 112 334', pin: '1234', active: true, zaloLinked: true, weekShifts: ['HC', 'HC', 'HC', 'HC', 'HC', 'HC', 'OFF'] },
+        { id: 's2', name: 'Trần Minh Quân', username: 'quan.letan', dept: 'Lễ tân', role: 'Trưởng ca', phone: '0912 445 678', pin: '2233', active: true, zaloLinked: true, weekShifts: ['S', 'S', 'S', 'C', 'C', 'OFF', 'S'] },
+        { id: 's3', name: 'Lê Bảo Ngọc', username: 'ngoc.letan', dept: 'Lễ tân', role: 'Nhân viên', phone: '0988 331 209', pin: '1122', active: true, zaloLinked: true, weekShifts: ['C', 'C', 'C', 'S', 'S', 'C', 'OFF'] },
+        { id: 's4', name: 'Phạm Gia Huy', username: 'huy.letan', dept: 'Lễ tân', role: 'Nhân viên', phone: '0933 812 900', pin: '4455', active: true, zaloLinked: false, weekShifts: ['Đ', 'Đ', 'OFF', 'Đ', 'Đ', 'S', 'C'] },
+        { id: 's5', name: 'Nguyễn Thị Thanh', username: 'thanh.buong', dept: 'Buồng phòng', role: 'Giám sát Buồng', phone: '0977 501 228', pin: '5566', active: true, zaloLinked: true, weekShifts: ['S', 'S', 'S', 'S', 'OFF', 'S', 'S'] },
+        { id: 's6', name: 'Võ Thị Kim Loan', username: 'loan.buong', dept: 'Buồng phòng', role: 'Nhân viên', phone: '0965 119 432', pin: '6677', active: true, zaloLinked: true, weekShifts: ['S', 'S', 'OFF', 'S', 'S', 'S', 'C'] },
+        { id: 's7', name: 'Đặng Thu Thảo', username: 'thao.buong', dept: 'Buồng phòng', role: 'Nhân viên', phone: '0944 902 117', pin: '7788', active: true, zaloLinked: true, weekShifts: ['C', 'C', 'S', 'S', 'C', 'OFF', 'S'] },
+        { id: 's8', name: 'Bùi Mỹ Duyên', username: 'duyen.buong', dept: 'Buồng phòng', role: 'Nhân viên', phone: '0938 712 654', pin: '8899', active: true, zaloLinked: false, weekShifts: ['S', 'OFF', 'C', 'C', 'S', 'C', 'C'] },
+        { id: 's9', name: 'hồ Văn Kiệt', username: 'kiet.buong', dept: 'Buồng phòng', role: 'Nhân viên', phone: '0902 634 891', pin: '9900', active: true, zaloLinked: true, weekShifts: ['C', 'S', 'C', 'OFF', 'C', 'S', 'S'] },
+        { id: 's10', name: 'Đinh Trọng Nghĩa', username: 'nghia.kythuat', dept: 'Kỹ thuật & Bảo trì', role: 'Trưởng ca', phone: '0919 883 712', pin: '1357', active: true, zaloLinked: true, weekShifts: ['HC', 'HC', 'HC', 'OFF', 'HC', 'HC', 'S'] },
+        { id: 's11', name: 'Trương Quốc Bảo', username: 'bao.kythuat', dept: 'Kỹ thuật & Bảo trì', role: 'Nhân viên', phone: '0981 204 519', pin: '2468', active: true, zaloLinked: false, weekShifts: ['Đ', 'OFF', 'Đ', 'Đ', 'C', 'Đ', 'Đ'] },
+        { id: 's12', name: 'Lý Thanh Tâm', username: 'tam.kho', dept: 'Quản lý & Kho', role: 'Nhân viên', phone: '0905 991 382', pin: '3690', active: true, zaloLinked: true, weekShifts: ['HC', 'HC', 'OFF', 'HC', 'HC', 'HC', 'HC'] }
+      ],
+
+      // Danh sách Công việc & Checklist + Chấm điểm AI
+      tasks: [
+        {
+          id: 't1',
+          title: 'Dọn phòng Checkout L101 (Hạng Love)',
+          dept: 'Buồng phòng',
+          assignee: 'Võ Thị Kim Loan',
+          roomCode: 'L101',
+          deadline: '11:30',
+          aiScore: 96,
+          aiBadge: 'Xuất sắc (96/100)',
+          aiComment: 'Ga giường tròn căng phẳng 99%, bồn tắm đôi khô ráo sạch bóng, đủ 2 khăn tắm + bộ Amenities chuẩn KYMI.',
+          photoPreset: 'standard_98',
+          checklist: [
+            { id: 'ck1', text: 'Thay bộ chăn ga gối lụa đỏ hạng Love', done: true },
+            { id: 'ck2', text: 'Khử trùng bồn tắm sục đôi & lau khô kính', done: true },
+            { id: 'ck3', text: 'Bổ sung 2 nước suối, 2 bò húc & bộ Amenities', done: true },
+            { id: 'ck4', text: 'Xông tinh dầu thông Đà Lạt & chụp ảnh báo cáo', done: true }
+          ]
+        },
+        {
+          id: 't2',
+          title: 'Dọn phòng & Setup đón khách VIP HL202 (Hạng Hill)',
+          dept: 'Buồng phòng',
+          assignee: 'Đặng Thu Thảo',
+          roomCode: 'HL202',
+          deadline: '13:30',
+          aiScore: 81,
+          aiBadge: 'Đạt - Cần lưu ý (81/100)',
+          aiComment: 'Giường và sàn gỗ sạch, tuy nhiên khăn tắm gấp hơi lệch góc và trên bàn trà thiếu 1 chai nước suối.',
+          photoPreset: 'warning_79',
+          checklist: [
+            { id: 'ck5', text: 'Hút bụi thảm & lau ban công view đồi thông', done: true },
+            { id: 'ck6', text: 'Thay mới 100% khăn tắm, khăn mặt', done: true },
+            { id: 'ck7', text: 'Kiểm tra khay Minibar & trà chiều', done: false },
+            { id: 'ck8', text: 'Chụp ảnh nghiệm thu gửi Giám sát Buồng', done: false }
+          ]
+        },
+        {
+          id: 't3',
+          title: 'Tổng vệ sinh phòng nhóm T401 (Hạng Team - 2 giường King)',
+          dept: 'Buồng phòng',
+          assignee: 'Bùi Mỹ Duyên',
+          roomCode: 'T401',
+          deadline: '14:00',
+          aiScore: 94,
+          aiBadge: 'Tốt (94/100)',
+          aiComment: '2 giường King căn chỉnh thẳng hàng, đủ 4 gối mỗi giường, khu vệ sinh đạt độ sáng tiêu chuẩn.',
+          photoPreset: 'standard_98',
+          checklist: [
+            { id: 'ck9', text: 'Thay ga 2 giường King & xếp 8 gối tiêu chuẩn', done: true },
+            { id: 'ck10', text: 'Bổ sung đủ 6 bộ bàn chải, khăn tắm cho nhóm', done: true },
+            { id: 'ck11', text: 'Kiểm tra điều hòa, TV thông minh & ấm siêu tốc', done: true }
+          ]
+        },
+        {
+          id: 't4',
+          title: 'Kiểm tra & bàn giao ca Lễ tân sáng (Quầy sảnh chính)',
+          dept: 'Lễ tân',
+          assignee: 'Trần Minh Quân',
+          roomCode: 'Sảnh Lễ Tân',
+          deadline: '14:00',
+          aiScore: 95,
+          aiBadge: 'Xuất sắc (95/100)',
+          aiComment: 'Quầy lễ tân gọn gàng, khay trà welcome đầy đủ, sổ bàn giao ca và két tiền đối chiếu khớp 100%.',
+          photoPreset: 'standard_98',
+          checklist: [
+            { id: 'ck12', text: 'Đối chiếu quỹ tiền mặt & hóa đơn POS ca sáng', done: true },
+            { id: 'ck13', text: 'Rà soát 5 booking khách sắp Check-in chiều nay', done: true },
+            { id: 'ck14', text: 'Chuẩn bị trà gừng nóng & khăn lạnh tại sảnh', done: true }
+          ]
+        },
+        {
+          id: 't5',
+          title: 'Bảo trì hệ thống nước nóng & sưởi khu phòng Happy',
+          dept: 'Kỹ thuật & Bảo trì',
+          assignee: 'Đinh Trọng Nghĩa',
+          roomCode: 'HP501 - HP511',
+          deadline: '16:30',
+          aiScore: null,
+          aiBadge: 'Chưa chấm AI',
+          aiComment: 'Đang chờ nhân viên gửi ảnh đồng hồ áp suất và nhiệt độ bình nhiệt trung tâm.',
+          photoPreset: 'warning_79',
+          checklist: [
+            { id: 'ck15', text: 'Kiểm tra áp suất bơm nhiệt tầng 5 (Hạng Happy)', done: true },
+            { id: 'ck16', text: 'Xả cặn van an toàn & đo nhiệt độ nước đầu vòi', done: false },
+            { id: 'ck17', text: 'Chụp ảnh thông số tủ điều khiển gửi lên hệ thống', done: false }
+          ]
+        }
+      ],
+
+      // Nhật ký đi trễ / về sớm (Phân hệ Lịch ca)
+      attendanceRecords: [
+        { id: 'at1', date: '12/11/2026 · Ca Sáng', staff: 'Võ Thị Kim Loan', dept: 'Buồng phòng', type: 'late', scheduleTime: '06:00', actualTime: '06:24', minutes: 24, note: 'Mưa lớn đường đèo Prenn', resolved: false },
+        { id: 'at2', date: '12/11/2026 · Ca Sáng', staff: 'Phạm Gia Huy', dept: 'Lễ tân', type: 'early', scheduleTime: '06:00 (Ra ca)', actualTime: '05:25', minutes: 35, note: 'Xin về sớm có việc cá nhân', resolved: true },
+        { id: 'at3', date: '11/11/2026 · Ca Chiều', staff: 'Bùi Mỹ Duyên', dept: 'Buồng phòng', type: 'late', scheduleTime: '14:00', actualTime: '14:42', minutes: 42, note: 'Quên bấm vân tay lúc vào ca', resolved: false },
+        { id: 'at4', date: '10/11/2026 · Ca Đêm', staff: 'Trương Quốc Bảo', dept: 'Kỹ thuật & Bảo trì', type: 'late', scheduleTime: '22:00', actualTime: '22:55', minutes: 55, note: 'Hỏng xe dọc đường', resolved: true },
+        { id: 'at5', date: '09/11/2026 · Hành chính', staff: 'Lý Thanh Tâm', dept: 'Quản lý & Kho', type: 'early', scheduleTime: '17:30', actualTime: '16:50', minutes: 40, note: 'Đi nhận hàng hóa đơn ngoài', resolved: true }
+      ],
+
+      // Danh sách 40 phòng khách sạn
+      rooms: buildInitial40Rooms(),
+
+      // Tồn kho khách sạn KYMI (Phân hệ Kho)
+      inventory: [
+        { id: 'k1', code: 'AM-01', name: 'Bộ bàn chải + kem đánh răng tre KYMI', category: 'Amenities', unit: 'Bộ', openQty: 300, importQty: 200, exportQty: 140, unitPrice: 4500, minStock: 100 },
+        { id: 'k2', code: 'AM-02', name: 'Dầu gội & Sữa tắm thảo mộc 30ml', category: 'Amenities', unit: 'Chai', openQty: 250, importQty: 150, exportQty: 180, unitPrice: 6000, minStock: 120 },
+        { id: 'k3', code: 'AM-03', name: 'Dao cạo râu & Lược gỗ cao cấp', category: 'Amenities', unit: 'Bộ', openQty: 120, importQty: 50, exportQty: 95, unitPrice: 5200, minStock: 80 },
+        { id: 'k4', code: 'MB-01', name: 'Nước suối Aquafina 500ml', category: 'Minibar', unit: 'Chai', openQty: 480, importQty: 240, exportQty: 360, unitPrice: 4200, minStock: 150 },
+        { id: 'k5', code: 'MB-02', name: 'Nước tăng lực RedBull (Bò húc)', category: 'Minibar', unit: 'Lon', openQty: 120, importQty: 48, exportQty: 110, unitPrice: 11500, minStock: 60 },
+        { id: 'k6', code: 'MB-03', name: 'Mì ly Cung Đình / Omachi', category: 'Minibar', unit: 'Ly', openQty: 90, importQty: 60, exportQty: 75, unitPrice: 9500, minStock: 50 },
+        { id: 'k7', code: 'LN-01', name: 'Khăn tắm lớn 100% Cotton 70x140cm', category: 'Vải & Giặt ủi', unit: 'Cái', openQty: 160, importQty: 40, exportQty: 15, unitPrice: 95000, minStock: 120 },
+        { id: 'k8', code: 'LN-02', name: 'Tinh dầu thông đỏ Đà Lạt xông phòng', category: 'Vệ sinh & Hương', unit: 'Lọ', openQty: 25, importQty: 10, exportQty: 18, unitPrice: 120000, minStock: 20 },
+        { id: 'k9', code: 'LN-03', name: 'Nước giặt xả công nghiệp can 10L', category: 'Vải & Giặt ủi', unit: 'Can', openQty: 12, importQty: 8, exportQty: 6, unitPrice: 320000, minStock: 8 }
+      ],
+
+      inventoryLogs: [
+        { id: 'lg1', time: '10:15 12/11', type: 'ocr_import', title: 'Nhập tự động bằng AI OCR (HĐ #KYMI-8821)', detail: '+200 Bộ bàn chải tre, +150 Dầu gội thảo mộc', actor: 'Lý Thanh Tâm' },
+        { id: 'lg2', time: '08:30 12/11', type: 'export', title: 'Xuất vật tư cho xe đẩy Buồng phòng tầng 1-3', detail: '-40 Nước suối, -40 Bộ bàn chải, -20 Dầu gội', actor: 'Nguyễn Thị Thanh' },
+        { id: 'lg3', time: '17:10 11/11', type: 'import', title: 'Nhập bổ sung Minibar từ NPP Đà Lạt', detail: '+240 Nước suối Aquafina, +48 Lon RedBull', actor: 'Hoàng Yến' }
+      ]
+    };
+
+    // Mẫu dữ liệu bóc tách từ 3 hoá đơn OCR
+    const OCR_INVOICE_PRESETS = {
+      inv_amenities: {
+        code: 'HĐ-AM2026-114',
+        supplier: 'Công ty TNHH Thiết bị Khách sạn Sao Việt',
+        date: '12/11/2026',
+        items: [
+          { stockId: 'k1', name: 'Bộ bàn chải + kem đánh răng tre KYMI', qty: 200, price: 4500 },
+          { stockId: 'k2', name: 'Dầu gội & Sữa tắm thảo mộc 30ml', qty: 150, price: 6000 },
+          { stockId: 'k3', name: 'Dao cạo râu & Lược gỗ cao cấp', qty: 100, price: 5200 }
+        ]
+      },
+      inv_minibar: {
+        code: 'HĐ-MB2026-509',
+        supplier: 'Đại lý Nước Giải Khát Cao Nguyên Đà Lạt',
+        date: '12/11/2026',
+        items: [
+          { stockId: 'k4', name: 'Nước suối Aquafina 500ml (10 thùng)', qty: 240, price: 4200 },
+          { stockId: 'k5', name: 'Nước tăng lực RedBull (4 thùng)', qty: 96, price: 11500 },
+          { stockId: 'k6', name: 'Mì ly Cung Đình / Omachi', qty: 60, price: 9500 }
+        ]
+      },
+      inv_linen: {
+        code: 'HĐ-LN2026-302',
+        supplier: 'Xưởng Chăn Ga Khăn Khách Sạn Á Châu',
+        date: '12/11/2026',
+        items: [
+          { stockId: 'k7', name: 'Khăn tắm lớn 100% Cotton 70x140cm', qty: 30, price: 95000 },
+          { stockId: 'k8', name: 'Tinh dầu thông đỏ Đà Lạt xông phòng', qty: 15, price: 120000 },
+          { stockId: 'k9', name: 'Nước giặt xả công nghiệp can 10L', qty: 6, price: 320000 }
+        ]
+      }
+    };
+
+    // =========================================================================
+    // HÀM TIỆN ÍCH CHUNG
+    // =========================================================================
+    function formatVND(num) {
+      return Number(num || 0).toLocaleString('vi-VN') + 'đ';
+    }
+
+    function showToast(msg, type = 'info') {
+      const box = document.getElementById('toastBox');
+      const el = document.createElement('div');
+      const colorCls =
+        type === 'success' ? 'bg-emerald-950/95 border-emerald-500 text-emerald-200' :
+        type === 'warning' ? 'bg-amber-950/95 border-amber-500 text-amber-200' :
+        type === 'ai' ? 'bg-violet-950/95 border-violet-400 text-violet-100' :
+        'bg-slate-900/95 border-amber-500/80 text-white';
+
+      el.className = `px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium shadow-2xl transition-all duration-200 ${colorCls}`;
+      el.textContent = msg;
+      box.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 220);
+      }, 2800);
+    }
+
+    // =========================================================================
+    // ĐIỀU HƯỚNG 5 PHÂN HỆ
+    // =========================================================================
+    function switchMainTab(tabKey) {
+      appState.activeTab = tabKey;
+      const allTabs = ['congviec', 'lichca', 'sodophong', 'kho', 'taikhoan'];
+      const headerInfo = {
+        congviec: {
+          title: 'Công việc & AI Đánh giá',
+          sub: 'Quản lý tiến độ, checklist, gửi báo cáo hình ảnh & chấm điểm chất lượng tự động bằng AI'
+        },
+        lichca: {
+          title: 'Lịch ca Tuần / Tháng & Chấm công',
+          sub: 'Sắp xếp ca làm việc theo tuần, tháng và theo dõi báo cáo đi trễ, về sớm'
+        },
+        sodophong: {
+          title: 'Sơ đồ 40 Phòng Khách sạn KYMI',
+          sub: '5 hạng phòng: Love (8), Hill (8), Honey (8), Team (5), Happy (11) · Đặt phòng & Bán phòng'
+        },
+        kho: {
+          title: 'Quản lý Kho & AI Đọc Hoá Đơn',
+          sub: 'Tự động bóc tách hoá đơn nhập hàng bằng hình ảnh (AI OCR) và quản lý Xuất – Nhập – Tồn'
+        },
+        taikhoan: {
+          title: 'Quản lý Tài khoản Nhân sự',
+          sub: 'Danh sách toàn bộ tài khoản nhân viên khách sạn, phân quyền, mã PIN & liên kết Zalo OA'
+        }
+      };
+
+      allTabs.forEach(k => {
+        const sec = document.getElementById(`sec-${k}`);
+        if (sec) sec.classList.toggle('hidden', k !== tabKey);
+      });
+
+      document.getElementById('topModuleTitle').textContent = headerInfo[tabKey].title;
+      document.getElementById('topModuleSubtitle').textContent = headerInfo[tabKey].sub;
+
+      document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+        const active = btn.getAttribute('data-tab') === tabKey;
+        btn.classList.toggle('text-amber-400', active);
+        btn.classList.toggle('text-slate-400', !active);
+      });
+
+      renderAll();
+    }
+
+    // =========================================================================
+    // RENDER PHÂN HỆ 1: CÔNG VIỆC & AI ĐÁNH GIÁ CHẤT LƯỢNG
+    // =========================================================================
+    function renderTaskModule() {
+      const totalTasks = appState.tasks.length;
+      let totalChecks = 0;
+      let doneChecks = 0;
+      let scoredCount = 0;
+      let scoreSum = 0;
+
+      appState.tasks.forEach(t => {
+        t.checklist.forEach(c => {
+          totalChecks++;
+          if (c.done) doneChecks++;
+        });
+        if (typeof t.aiScore === 'number') {
+          scoredCount++;
+          scoreSum += t.aiScore;
+        }
+      });
+
+      const pct = totalChecks > 0 ? Math.round((doneChecks / totalChecks) * 100) : 0;
+      const completedTasks = appState.tasks.filter(t => t.checklist.every(c => c.done)).length;
+      const avgAi = scoredCount > 0 ? (scoreSum / scoredCount).toFixed(1) : '--';
+
+      document.getElementById('taskKpiTotal').textContent = totalTasks;
+      document.getElementById('taskKpiCompletedLabel').textContent = `${completedTasks} hoàn thành`;
+      document.getElementById('taskKpiChecklistPct').textContent = `${pct}%`;
+      document.getElementById('taskKpiChecklistCount').textContent = `${doneChecks}/${totalChecks} mục`;
+      document.getElementById('taskKpiPhotoCount').textContent = totalTasks;
+      document.getElementById('taskKpiAiAvg').textContent = avgAi;
+      document.getElementById('headerTaskProgress').textContent = `${pct}%`;
+
+      // Lọc danh sách công việc
+      const filtered = appState.tasks.filter(t => {
+        if (appState.taskDeptFilter !== 'all' && t.dept !== appState.taskDeptFilter) return false;
+        const isDone = t.checklist.every(c => c.done);
+        if (appState.taskStatusFilter === 'completed' && !isDone) return false;
+        if (appState.taskStatusFilter === 'pending' && isDone) return false;
+        if (appState.taskStatusFilter === 'ai_reviewed' && typeof t.aiScore !== 'number') return false;
+        return true;
+      });
+
+      const listEl = document.getElementById('taskListContainer');
+      listEl.innerHTML = filtered.map(task => {
+        const doneCnt = task.checklist.filter(c => c.done).length;
+        const totalCnt = task.checklist.length;
+        const taskPct = totalCnt > 0 ? Math.round((doneCnt / totalCnt) * 100) : 0;
+        const isSelected = task.id === appState.selectedTaskId;
+
+        const scoreBadgeCls =
+          task.aiScore >= 90 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+          task.aiScore >= 75 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+          task.aiScore !== null ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
+          'bg-slate-800 text-slate-400 border-slate-700';
+
+        return `
+          <div class="kymi-card p-4 space-y-3 transition ${isSelected ? 'ring-2 ring-amber-500/80 bg-[#1c222b]' : ''}">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#252d3a] text-amber-400">${task.dept}</span>
+                  <span class="text-xs text-slate-400">📍 ${task.roomCode} · Hạn ${task.deadline}</span>
+                </div>
+                <h4 class="text-sm sm:text-base font-bold text-white mt-1">${task.title}</h4>
+                <div class="text-xs text-slate-400 mt-0.5">Nhân viên: <strong class="text-slate-200">${task.assignee}</strong></div>
+              </div>
+
+              <div class="flex flex-col items-end gap-1.5">
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${scoreBadgeCls}">
+                  🤖 ${task.aiBadge}
+                </span>
+                <button type="button" data-select-task-ai="${task.id}" class="text-xs font-semibold text-violet-300 hover:text-violet-200 underline">
+                  Mở ảnh & chấm AI →
+                </button>
+              </div>
+            </div>
+
+            <!-- Thanh tiến độ checklist -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Checklist công việc (${doneCnt}/${totalCnt})</span>
+                <span class="font-bold text-amber-400">${taskPct}%</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-[#11151b] overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-300" style="width: ${taskPct}%"></div>
+              </div>
+            </div>
+
+            <!-- Danh sách từng dòng checklist -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              ${task.checklist.map(ck => `
+                <label class="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#11151b] border border-[#262d3b] cursor-pointer hover:border-amber-500/50">
+                  <input type="checkbox" data-task-ck="${task.id}|${ck.id}" ${ck.done ? 'checked' : ''} class="mt-0.5 w-4 h-4 accent-amber-500" />
+                  <span class="text-xs ${ck.done ? 'line-through text-slate-500' : 'text-slate-200'}">${ck.text}</span>
+                </label>
+              `).join('')}
+            </div>
+
+            <!-- Nhận xét của AI -->
+            <div class="p-2.5 rounded-xl bg-violet-950/25 border border-violet-500/30 text-xs text-violet-200 flex items-start gap-2">
+              <span class="font-bold">AI:</span>
+              <span>${task.aiComment}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      renderAiInspectorPanel();
+    }
+
+    function renderAiInspectorPanel() {
+      const task = appState.tasks.find(t => t.id === appState.selectedTaskId) || appState.tasks[0];
+      if (!task) return;
+
+      document.getElementById('aiPanelSelectedTaskLabel').textContent =
+        `Đang chọn: ${task.title} (${task.assignee})`;
+
+      const previewEl = document.getElementById('aiPhotoPreviewCanvas');
+      const preset = appState.selectedPhotoPreset;
+
+      if (appState.customUploadedPhotoDataUrl) {
+        previewEl.innerHTML = `<img src="${appState.customUploadedPhotoDataUrl}" alt="Ảnh báo cáo" class="w-full h-full object-cover" />`;
+      } else {
+        // Vẽ minh họa SVG trực quan của phòng khách sạn kèm các khung nhận diện AI Vision (Bounding boxes)
+        const presetConfigs = {
+          standard_98: {
+            label: 'ẢNH THỰC TẾ: PHÒNG ĐẠT CHUẨN 5 SAO KYMI',
+            bedBox: { text: 'Ga giường phẳng: 99%', color: '#10b981' },
+            towelBox: { text: 'Khăn & Amenities: Đủ 100%', color: '#10b981' },
+            floorBox: { text: 'Sàn & Ánh sáng: Sạch bóng', color: '#38bdf8' }
+          },
+          warning_79: {
+            label: 'ẢNH THỰC TẾ: PHÁT HIỆN 2 ĐIỂM CẦN KHẮC PHỤC',
+            bedBox: { text: 'Ga giường: Đạt 92%', color: '#10b981' },
+            towelBox: { text: 'Khăn tắm gấp lệch góc (-12đ)', color: '#f59e0b' },
+            floorBox: { text: 'Thiếu 1 chai nước suối (-7đ)', color: '#f43f5e' }
+          },
+          issue_62: {
+            label: 'ẢNH THỰC TẾ: CHƯA ĐẠT TIÊU CHUẨN BÀN GIAO',
+            bedBox: { text: 'Ga giường còn nếp nhăn (-20đ)', color: '#f43f5e' },
+            towelBox: { text: 'Chưa đặt khay Amenities (-10đ)', color: '#f59e0b' },
+            floorBox: { text: 'Sàn phòng tắm còn đọng nước (-8đ)', color: '#f43f5e' }
+          }
+        };
+        const cfg = presetConfigs[preset] || presetConfigs.standard_98;
+
+        previewEl.innerHTML = `
+          <svg viewBox="0 0 480 220" class="w-full h-full">
+            <defs>
+              <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1e2430"/>
+                <stop offset="100%" stop-color="#131720"/>
+              </linearGradient>
+            </defs>
+            <rect width="480" height="220" fill="url(#wallGrad)"/>
+            <!-- Sàn gỗ -->
+            <polygon points="0,165 480,165 480,220 0,220" fill="#2a211b"/>
+            <!-- Đầu giường & Đệm -->
+            <rect x="70" y="55" width="210" height="60" rx="8" fill="#4b3628" stroke="#6b4e3b"/>
+            <rect x="55" y="100" width="240" height="68" rx="10" fill="#f8fafc"/>
+            <rect x="55" y="128" width="240" height="36" rx="6" fill="#be123c"/>
+            <!-- 2 Gối -->
+            <rect x="85" y="88" width="75" height="24" rx="6" fill="#e2e8f0"/>
+            <rect x="180" y="88" width="75" height="24" rx="6" fill="#e2e8f0"/>
+            <!-- Bàn trà & Khay Amenities / Nước -->
+            <rect x="330" y="110" width="115" height="58" rx="6" fill="#3b2f26"/>
+            <rect x="348" y="92" width="32" height="18" rx="4" fill="#f1f5f9"/>
+            <rect x="395" y="86" width="14" height="24" rx="3" fill="#38bdf8"/>
+            <rect x="415" y="86" width="14" height="24" rx="3" fill="#f59e0b"/>
+
+            <!-- AI Vision Bounding Boxes -->
+            <rect x="50" y="82" width="250" height="90" rx="8" fill="none" stroke="${cfg.bedBox.color}" stroke-width="2" stroke-dasharray="5,3"/>
+            <rect x="50" y="64" width="155" height="18" rx="4" fill="${cfg.bedBox.color}"/>
+            <text x="56" y="77" fill="#090d14" font-size="10" font-weight="bold">${cfg.bedBox.text}</text>
+
+            <rect x="325" y="78" width="125" height="92" rx="8" fill="none" stroke="${cfg.towelBox.color}" stroke-width="2" stroke-dasharray="5,3"/>
+            <rect x="325" y="60" width="145" height="18" rx="4" fill="${cfg.towelBox.color}"/>
+            <text x="331" y="73" fill="#090d14" font-size="10" font-weight="bold">${cfg.towelBox.text}</text>
+
+            <rect x="20" y="172" width="440" height="40" rx="6" fill="none" stroke="${cfg.floorBox.color}" stroke-width="1.8" stroke-dasharray="4,4"/>
+            <rect x="20" y="182" width="185" height="18" rx="4" fill="${cfg.floorBox.color}"/>
+            <text x="26" y="195" fill="#090d14" font-size="10" font-weight="bold">${cfg.floorBox.text}</text>
+
+            <text x="14" y="20" fill="#cbd5e1" font-size="10" font-weight="bold">${cfg.label} · PHÒNG ${task.roomCode}</text>
+          </svg>
+        `;
+      }
+
+      const resultBox = document.getElementById('aiEvaluationResultBox');
+      const score = task.aiScore !== null ? task.aiScore : 88;
+      const metrics = score >= 90
+        ? [
+            { name: 'Độ phẳng & Căng ga giường', val: 98 },
+            { name: 'Đầy đủ Khăn & Bộ Amenities', val: 96 },
+            { name: 'Vệ sinh Sàn & Ánh sáng tiêu chuẩn', val: 95 }
+          ]
+        : score >= 75
+        ? [
+            { name: 'Độ phẳng & Căng ga giường', val: 90 },
+            { name: 'Đầy đủ Khăn & Bộ Amenities', val: 74 },
+            { name: 'Vệ sinh Sàn & Ánh sáng tiêu chuẩn', val: 80 }
+          ]
+        : [
+            { name: 'Độ phẳng & Căng ga giường', val: 60 },
+            { name: 'Đầy đủ Khăn & Bộ Amenities', val: 65 },
+            { name: 'Vệ sinh Sàn & Ánh sáng tiêu chuẩn', val: 61 }
+          ];
+
+      resultBox.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs text-slate-400">Điểm đánh giá AI cho nhân viên <strong class="text-white">${task.assignee}</strong></div>
+            <div class="text-sm font-bold text-violet-300 mt-0.5">${task.aiBadge}</div>
+          </div>
+          <div class="w-12 h-12 rounded-2xl bg-violet-500/20 border border-violet-400/50 flex items-center justify-center text-lg font-extrabold text-violet-200">
+            ${task.aiScore !== null ? task.aiScore : '--'}
+          </div>
+        </div>
+        <div class="space-y-2 pt-1">
+          ${metrics.map(m => `
+            <div>
+              <div class="flex justify-between text-[11px] text-slate-300 mb-0.5">
+                <span>${m.name}</span>
+                <span class="font-bold">${m.val}/100</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full bg-[#1d232e] overflow-hidden">
+                <div class="h-full ${m.val >= 85 ? 'bg-emerald-400' : m.val >= 75 ? 'bg-amber-400' : 'bg-rose-400'}" style="width: ${m.val}%"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed pt-1 border-t border-[#232a36]">
+          💬 <strong>Nhận xét AI:</strong> ${task.aiComment}
+        </p>
+      `;
+    }
+
+    // =========================================================================
+    // RENDER PHÂN HỆ 2: LỊCH CA (TUẦN / THÁNG / BÁO CÁO ĐI TRỄ VỀ SỚM)
+    // =========================================================================
+    function getShiftPillClass(code) {
+      if (code === 'S') return 'bg-sky-500/20 text-sky-300 border-sky-500/40';
+      if (code === 'C') return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+      if (code === 'Đ') return 'bg-violet-500/20 text-violet-300 border-violet-500/40';
+      if (code === 'HC') return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+      return 'bg-slate-800/80 text-slate-500 border-slate-700';
+    }
+
+    function renderScheduleModule() {
+      const isWeek = appState.schedMode === 'week';
+      const isMonth = appState.schedMode === 'month';
+      const isAtt = appState.schedMode === 'attendance';
+
+      document.getElementById('schedWeekContainer').classList.toggle('hidden', !isWeek);
+      document.getElementById('schedMonthContainer').classList.toggle('hidden', !isMonth);
+      document.getElementById('schedAttendanceContainer').classList.toggle('hidden', !isAtt);
+
+      const staffFiltered = appState.staffAccounts.filter(s =>
+        appState.schedDeptFilter === 'all' || s.dept === appState.schedDeptFilter
+      );
+
+      // 1. Bảng Lịch Tuần
+      const weekBody = document.getElementById('schedWeekTableBody');
+      weekBody.innerHTML = staffFiltered.map(s => {
+        const workingDays = s.weekShifts.filter(c => c !== 'OFF').length;
+        return `
+          <tr class="hover:bg-[#1b212b]">
+            <td class="p-3">
+              <div class="font-bold text-white text-xs sm:text-sm">${s.name}</div>
+              <div class="text-[11px] text-slate-400">${s.dept} · <span class="text-amber-400">${s.role}</span></div>
+            </td>
+            ${s.weekShifts.map((shiftCode, dIdx) => `
+              <td class="p-2 text-center">
+                <button
+                  type="button"
+                  data-week-shift="${s.id}|${dIdx}"
+                  class="w-14 py-1.5 rounded-lg font-bold text-xs border transition hover:scale-105 ${getShiftPillClass(shiftCode)}"
+                >
+                  ${shiftCode}
+                </button>
+              </td>
+            `).join('')}
+            <td class="p-2.5 text-center font-bold text-emerald-400">${workingDays} ca</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 2. Bảng Sơ đồ Tháng (30 ngày)
+      const monthHead = document.getElementById('schedMonthTableHead');
+      const days30 = Array.from({ length: 30 }, (_, i) => i + 1);
+      monthHead.innerHTML = `
+        <tr class="bg-[#12161c] text-slate-400 border-b border-[#262d3b]">
+          <th class="p-2.5 text-left w-44 sticky left-0 bg-[#12161c]">Nhân viên</th>
+          ${days30.map(d => `<th class="p-1.5 text-center min-w-[30px]">${d}</th>`).join('')}
+          <th class="p-2 text-center">Công</th>
+        </tr>
+      `;
+
+      const monthBody = document.getElementById('schedMonthTableBody');
+      monthBody.innerHTML = staffFiltered.map(s => {
+        let totalMonthWork = 0;
+        const cells = days30.map(d => {
+          const code = s.weekShifts[(d - 1) % 7];
+          if (code !== 'OFF') totalMonthWork++;
+          return `
+            <td class="p-1 text-center">
+              <button
+                type="button"
+                data-month-shift="${s.id}|${(d - 1) % 7}"
+                class="w-7 h-7 rounded font-bold text-[10px] border ${getShiftPillClass(code)}"
+              >
+                ${code}
+              </button>
+            </td>
+          `;
+        }).join('');
+
+        return `
+          <tr class="hover:bg-[#1b212b]">
+            <td class="p-2.5 font-semibold text-white sticky left-0 bg-[#171b22] border-r border-[#262d3b]">
+              <div>${s.name}</div>
+              <div class="text-[10px] text-slate-400">${s.dept}</div>
+            </td>
+            ${cells}
+            <td class="p-2 text-center font-bold text-amber-400">${totalMonthWork}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 3. Báo cáo Đi trễ / Về sớm
+      const lateList = appState.attendanceRecords.filter(r => r.type === 'late');
+      const earlyList = appState.attendanceRecords.filter(r => r.type === 'early');
+      const lateMins = lateList.reduce((acc, r) => acc + r.minutes, 0);
+      const earlyMins = earlyList.reduce((acc, r) => acc + r.minutes, 0);
+
+      document.getElementById('attTotalLateCount').textContent = `${lateList.length} lượt (${lateMins} phút)`;
+      document.getElementById('attTotalEarlyCount').textContent = `${earlyList.length} lượt (${earlyMins} phút)`;
+
+      const attBody = document.getElementById('attendanceReportTableBody');
+      attBody.innerHTML = appState.attendanceRecords.map(rec => `
+        <tr class="hover:bg-[#1b212b]">
+          <td class="p-3 font-medium text-white">${rec.date}</td>
+          <td class="p-3 font-bold text-white">${rec.staff}</td>
+          <td class="p-3 text-slate-400">${rec.dept}</td>
+          <td class="p-3">
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+              rec.type === 'late' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'
+            }">
+              ${rec.type === 'late' ? 'Đi trễ' : 'Về sớm'}
+            </span>
+          </td>
+          <td class="p-3 text-slate-300">${rec.scheduleTime} → <strong>${rec.actualTime}</strong></td>
+          <td class="p-3 font-bold ${rec.type === 'late' ? 'text-rose-400' : 'text-amber-400'}">${rec.minutes} phút</td>
+          <td class="p-3">
+            ${rec.resolved
+              ? '<span class="text-emerald-400 font-semibold">✓ Đã duyệt giải trình</span>'
+              : `<button type="button" data-resolve-att="${rec.id}" class="px-2.5 py-1 rounded-lg bg-[#252d3a] hover:bg-emerald-600 text-white font-semibold">Xác nhận xử lý</button>`
+            }
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // =========================================================================
+    // RENDER PHÂN HỆ 3: SƠ ĐỒ 40 PHÒNG KHÁCH SẠN KYMI
+    // =========================================================================
+    function renderRoomsModule() {
+      const avail = appState.rooms.filter(r => r.status === 'available').length;
+      const occ = appState.rooms.filter(r => r.status === 'occupied').length;
+      const resv = appState.rooms.filter(r => r.status === 'reserved').length;
+      const clean = appState.rooms.filter(r => r.status === 'cleaning').length;
+      const occRate = Math.round(((occ + resv) / 40) * 100);
+
+      document.getElementById('roomStatAvailable').textContent = avail;
+      document.getElementById('roomStatOccupied').textContent = occ;
+      document.getElementById('roomStatReserved').textContent = resv;
+      document.getElementById('roomStatCleaning').textContent = clean;
+      document.getElementById('roomStatRevenue').textContent = formatVND(appState.totalRevenue);
+      document.getElementById('headerOccupancyRate').textContent = `${occRate}%`;
+
+      const query = (document.getElementById('roomSearchInput')?.value || '').trim().toLowerCase();
+
+      const filteredRooms = appState.rooms.filter(r => {
+        if (appState.roomCatFilter !== 'all' && r.category !== appState.roomCatFilter) return false;
+        if (appState.roomStateFilter !== 'all' && r.status !== appState.roomStateFilter) return false;
+        if (query) {
+          const matchCode = r.code.toLowerCase().includes(query);
+          const matchGuest = r.guest && r.guest.name.toLowerCase().includes(query);
+          if (!matchCode && !matchGuest) return false;
+        }
+        return true;
+      });
+
+      const statusStyles = {
+        available: {
+          card: 'bg-[#14261f] border-emerald-500/40 hover:border-emerald-400',
+          badge: 'bg-emerald-500/20 text-emerald-300',
+          label: 'Trống sạch'
+        },
+        occupied: {
+          card: 'bg-[#2b161b] border-rose-500/50 hover:border-rose-400',
+          badge: 'bg-rose-500/20 text-rose-300',
+          label: 'Đang có khách'
+        },
+        reserved: {
+          card: 'bg-[#142233] border-sky-500/50 hover:border-sky-400',
+          badge: 'bg-sky-500/20 text-sky-300',
+          label: 'Đã đặt trước'
+        },
+        cleaning: {
+          card: 'bg-[#2b2212] border-amber-500/50 hover:border-amber-400',
+          badge: 'bg-amber-500/20 text-amber-300',
+          label: 'Chờ dọn'
+        }
+      };
+
+      const catTagColors = {
+        Love: 'text-pink-300',
+        Hill: 'text-emerald-300',
+        Honey: 'text-amber-300',
+        Team: 'text-sky-300',
+        Happy: 'text-violet-300'
+      };
+
+      const gridEl = document.getElementById('hotelRoomsGrid');
+      gridEl.innerHTML = filteredRooms.map(room => {
+        const st = statusStyles[room.status] || statusStyles.available;
+        const guestLine = room.guest
+          ? `<div class="text-[11px] font-semibold text-white truncate mt-1.5">👤 ${room.guest.name}</div>
+             <div class="text-[10px] text-slate-300">${room.guest.stayType} (${room.guest.units})</div>`
+          : `<div class="text-[11px] text-slate-400 mt-1.5">${formatVND(room.overnightPrice)} / đêm</div>
+             <div class="text-[10px] text-slate-500">${formatVND(room.hourlyPrice)} / 2h</div>`;
+
+        return `
+          <button
+            type="button"
+            data-room-id="${room.id}"
+            class="p-3 rounded-2xl border text-left transition flex flex-col justify-between min-h-[118px] shadow-sm ${st.card}"
+          >
+            <div class="w-full flex items-center justify-between gap-1">
+              <span class="text-sm font-extrabold text-white">${room.code}</span>
+              <span class="text-[10px] font-bold ${catTagColors[room.category]}">${room.category}</span>
+            </div>
+
+            <div class="my-1">
+              <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold ${st.badge}">
+                ${st.label}
+              </span>
+              ${guestLine}
+            </div>
+
+            <div class="text-[10px] text-amber-400/90 font-semibold pt-1 border-t border-white/10 w-full flex justify-between">
+              <span>${room.status === 'available' ? 'Bán / Đặt phòng' : 'Chi tiết / Trả'}</span>
+              <span>→</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // RENDER PHÂN HỆ 4: KHO KHÁCH SẠN & AI ĐỌC HOÁ ĐƠN (OCR)
+    // =========================================================================
+    function renderInventoryModule() {
+      let totalVal = 0;
+      let lowStockCnt = 0;
+
+      const stockBody = document.getElementById('inventoryStockTableBody');
+      stockBody.innerHTML = appState.inventory.map(item => {
+        const endQty = item.openQty + item.importQty - item.exportQty;
+        const val = endQty * item.unitPrice;
+        totalVal += val;
+        const isLow = endQty <= item.minStock;
+        if (isLow) lowStockCnt++;
+
+        return `
+          <tr class="hover:bg-[#1b212b]">
+            <td class="p-2.5">
+              <div class="font-bold text-white">${item.name}</div>
+              <div class="text-[10px] text-slate-400">Mã: ${item.code} · ĐVT: ${item.unit}</div>
+            </td>
+            <td class="p-2.5 text-slate-300">${item.category}</td>
+            <td class="p-2.5 text-center text-slate-300">${item.openQty}</td>
+            <td class="p-2.5 text-center font-semibold text-emerald-400">+${item.importQty}</td>
+            <td class="p-2.5 text-center font-semibold text-amber-400">-${item.exportQty}</td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded font-bold ${isLow ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'text-white'}">
+                ${endQty} ${isLow ? '⚠️' : ''}
+              </span>
+            </td>
+            <td class="p-2.5 text-right text-slate-300">${formatVND(item.unitPrice)}</td>
+            <td class="p-2.5 text-center">
+              <div class="inline-flex items-center gap-1">
+                <button type="button" data-quick-stock="${item.id}|import" class="px-2 py-1 rounded bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 font-bold text-[11px]">+Nhập</button>
+                <button type="button" data-quick-stock="${item.id}|export" class="px-2 py-1 rounded bg-amber-600/30 hover:bg-amber-600 text-amber-200 font-bold text-[11px]">-Xuất</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('invKpiTotalSkus').textContent = `${appState.inventory.length} mặt hàng`;
+      document.getElementById('invKpiLowStock').textContent = `${lowStockCnt} mặt hàng`;
+      document.getElementById('invKpiTotalValue').textContent = formatVND(totalVal);
+      document.getElementById('invKpiOcrCount').textContent = `${appState.ocrInvoiceCounter} phiếu`;
+
+      // Nhật ký kho
+      const logsEl = document.getElementById('inventoryLogsContainer');
+      logsEl.innerHTML = appState.inventoryLogs.map(lg => `
+        <div class="py-2.5 flex items-start justify-between gap-2">
+          <div>
+            <div class="font-semibold text-white">${lg.title}</div>
+            <div class="text-slate-400 mt-0.5">${lg.detail}</div>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="text-[11px] text-amber-400 font-medium">${lg.actor}</div>
+            <div class="text-[10px] text-slate-500">${lg.time}</div>
+          </div>
+        </div>
+      `).join('');
+
+      renderOcrInvoicePreview();
+    }
+
+    function loadPresetIntoWorkingInvoice(presetKey) {
+      const p = OCR_INVOICE_PRESETS[presetKey] || OCR_INVOICE_PRESETS.inv_amenities;
+      appState.ocrWorkingInvoice = {
+        code: p.code,
+        supplier: p.supplier,
+        date: p.date,
+        items: p.items.map(it => {
+          const match = appState.inventory.find(k => k.id === it.stockId);
+          return {
+            stockId: it.stockId || '',
+            name: it.name,
+            unit: match ? match.unit : 'Cái',
+            category: match ? match.category : 'Vật tư KS',
+            qty: it.qty,
+            price: it.price
+          };
+        })
+      };
+    }
+
+    function renderOcrInvoicePreview() {
+      const inv = appState.ocrWorkingInvoice;
+      const totalInvoice = inv.items.reduce((acc, i) => acc + (Number(i.qty) || 0) * (Number(i.price) || 0), 0);
+
+      const previewBox = document.getElementById('ocrInvoiceVisualPreview');
+      if (appState.uploadedOcrImageDataUrl) {
+        previewBox.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-xs text-sky-300">
+              <span class="font-bold truncate">🖼️ Ảnh hoá đơn tải lên: ${appState.uploadedOcrFileName || 'hoa-don-nhap-kho.jpg'}</span>
+              <button type="button" id="btnClearUploadedOcrImg" class="text-[11px] text-rose-400 hover:underline">Xóa ảnh / Dùng mẫu</button>
+            </div>
+            <div class="relative rounded-lg overflow-hidden border border-sky-500/50 bg-black max-h-56 flex items-center justify-center">
+              <img src="${appState.uploadedOcrImageDataUrl}" alt="Hoá đơn tải lên" class="max-h-56 w-auto object-contain" />
+            </div>
+          </div>
+        `;
+      } else {
+        previewBox.innerHTML = `
+          <div class="bg-[#f8fafc] text-slate-900 rounded-lg p-3 font-mono text-[11px] space-y-1.5 border-2 border-dashed border-sky-400">
+            <div class="flex justify-between font-bold border-b border-slate-300 pb-1">
+              <span>HOÁ ĐƠN BÁN HÀNG (${inv.code})</span>
+              <span>Ngày: ${inv.date}</span>
+            </div>
+            <div class="text-[10px] text-slate-600">Nhà cung cấp: <strong>${inv.supplier}</strong></div>
+            <div class="text-[10px] text-slate-600">Đơn vị mua: <strong>Khách sạn KYMI Đà Lạt</strong></div>
+            <div class="border-t border-b border-slate-300 py-1 space-y-1">
+              ${inv.items.map((it, idx) => `
+                <div class="flex justify-between">
+                  <span>${idx + 1}. ${it.name}</span>
+                  <span class="font-bold">${it.qty} x ${formatVND(it.price)}</span>
+                </div>
+              `).join('')}
+            </div>
+            <div class="flex justify-between font-extrabold text-xs text-rose-700 pt-0.5">
+              <span>TỔNG CỘNG THANH TOÁN:</span>
+              <span>${formatVND(totalInvoice)}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      const extractedEl = document.getElementById('ocrExtractedTableContainer');
+      extractedEl.innerHTML = `
+        <div class="p-3 rounded-xl bg-[#11151b] border border-sky-500/40 space-y-3 text-xs">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#242c3a] pb-2">
+            <div>
+              <span class="font-bold text-sky-300">✓ Bảng hàng hoá AI bóc tách (${inv.items.length} mặt hàng)</span>
+              <p class="text-[10px] text-slate-400">Bạn có thể sửa trực tiếp tên hàng, số lượng, đơn giá trước khi nhập kho</p>
+            </div>
+            <div class="text-right">
+              <div class="text-[10px] text-slate-400">Tổng tiền hoá đơn</div>
+              <div class="font-extrabold text-sm text-amber-400">${formatVND(totalInvoice)}</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">Số hoá đơn</label>
+              <input id="ocrInvCodeInput" type="text" value="${inv.code}" class="kymi-input w-full px-2.5 py-1.5 text-xs font-semibold" />
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">Nhà cung cấp</label>
+              <input id="ocrInvSupplierInput" type="text" value="${inv.supplier}" class="kymi-input w-full px-2.5 py-1.5 text-xs" />
+            </div>
+          </div>
+
+          <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+            ${inv.items.map((it, idx) => `
+              <div class="p-2 rounded-lg bg-[#171b22] border border-[#2a3241] grid grid-cols-12 gap-1.5 items-center">
+                <div class="col-span-6">
+                  <div class="text-[10px] text-slate-400">Tên vật tư / Hàng hoá</div>
+                  <input type="text" data-ocr-field="name" data-ocr-idx="${idx}" value="${it.name}" class="kymi-input w-full px-2 py-1 text-xs font-semibold mt-0.5" />
+                </div>
+                <div class="col-span-2">
+                  <div class="text-[10px] text-slate-400">SL nhập</div>
+                  <input type="number" min="1" data-ocr-field="qty" data-ocr-idx="${idx}" value="${it.qty}" class="kymi-input w-full px-2 py-1 text-xs font-bold text-emerald-400 text-center mt-0.5" />
+                </div>
+                <div class="col-span-3">
+                  <div class="text-[10px] text-slate-400">Đơn giá (đ)</div>
+                  <input type="number" min="0" step="500" data-ocr-field="price" data-ocr-idx="${idx}" value="${it.price}" class="kymi-input w-full px-2 py-1 text-xs text-amber-300 text-right mt-0.5" />
+                </div>
+                <div class="col-span-1 flex justify-end pt-3">
+                  <button type="button" data-ocr-remove="${idx}" class="w-6 h-6 rounded bg-rose-500/20 text-rose-300 hover:bg-rose-500 hover:text-white text-xs font-bold">✕</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // RENDER PHÂN HỆ 5: TÀI KHOẢN NHÂN VIÊN KHÁCH SẠN
+    // =========================================================================
+    function renderAccountsModule() {
+      const q = (document.getElementById('accountSearchInput')?.value || '').trim().toLowerCase();
+      const filtered = appState.staffAccounts.filter(acc => {
+        if (!q) return true;
+        return (
+          acc.name.toLowerCase().includes(q) ||
+          acc.dept.toLowerCase().includes(q) ||
+          acc.phone.toLowerCase().includes(q) ||
+          acc.username.toLowerCase().includes(q)
+        );
+      });
+
+      const grid = document.getElementById('accountsGridContainer');
+      grid.innerHTML = filtered.map(acc => `
+        <div class="kymi-card p-4 flex flex-col justify-between gap-3">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600 flex items-center justify-center font-extrabold text-sm text-amber-400">
+                ${acc.name.split(' ').slice(-1)[0].charAt(0)}
+              </div>
+              <div>
+                <div class="font-bold text-white text-sm sm:text-base">${acc.name}</div>
+                <div class="text-xs text-slate-400">@${acc.username} · ${acc.phone}</div>
+              </div>
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+              acc.active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+            }">
+              ${acc.active ? 'Đang hoạt động' : 'Tạm khóa'}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-[#11151b] border border-[#242c3a] text-xs">
+            <div>
+              <div class="text-[10px] text-slate-500">Bộ phận</div>
+              <div class="font-semibold text-slate-200">${acc.dept}</div>
+            </div>
+            <div>
+              <div class="text-[10px] text-slate-500">Phân quyền</div>
+              <div class="font-semibold text-amber-400">${acc.role}</div>
+            </div>
+            <div>
+              <div class="text-[10px] text-slate-500">Mã PIN đăng nhập</div>
+              <div class="font-mono font-bold text-white">${acc.pin}</div>
+            </div>
+            <div>
+              <div class="text-[10px] text-slate-500">Zalo Official Account</div>
+              <div class="font-semibold ${acc.zaloLinked ? 'text-emerald-400' : 'text-slate-500'}">
+                ${acc.zaloLinked ? '✓ Đã liên kết' : 'Chưa liên kết'}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1">
+            <button type="button" data-switch-user="${acc.id}" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-semibold text-xs transition">
+              Đăng nhập thử
+            </button>
+            <div class="flex items-center gap-1.5">
+              <button type="button" data-reset-pin="${acc.id}" class="px-2.5 py-1.5 rounded-lg bg-[#1f2530] hover:bg-[#2a3241] text-xs text-slate-300">
+                Đổi PIN
+              </button>
+              <button type="button" data-toggle-acc="${acc.id}" class="px-2.5 py-1.5 rounded-lg bg-[#1f2530] hover:bg-[#2a3241] text-xs ${acc.active ? 'text-rose-300' : 'text-emerald-300'}">
+                ${acc.active ? 'Khóa' : 'Mở khóa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderAll() {
+      renderTaskModule();
+      renderScheduleModule();
+      renderRoomsModule();
+      renderInventoryModule();
+      renderAccountsModule();
+    }
+
+    // =========================================================================
+    // KẾT NỐI TOÀN BỘ SỰ KIỆN TƯƠNG TÁC (EVENT LISTENERS)
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+
+      // Chuyển 5 tab chính
+      document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          switchMainTab(btn.getAttribute('data-tab'));
+        });
+      });
+
+      document.getElementById('btnBrandHome').addEventListener('click', () => switchMainTab('congviec'));
+      document.getElementById('btnOpenLoginSwitch').addEventListener('click', () => switchMainTab('taikhoan'));
+
+      // ----------------- SỰ KIỆN PHÂN HỆ 1: CÔNG VIỆC & AI -----------------
+      document.querySelectorAll('.task-dept-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          appState.taskDeptFilter = btn.getAttribute('data-task-dept');
+          document.querySelectorAll('.task-dept-btn').forEach(b => {
+            const active = b.getAttribute('data-task-dept') === appState.taskDeptFilter;
+            b.className = active
+              ? 'task-dept-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950'
+              : 'task-dept-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#1f2530] text-slate-300 hover:text-white';
+          });
+          renderTaskModule();
+        });
+      });
+
+      document.getElementById('taskStatusFilter').addEventListener('change', (e) => {
+        appState.taskStatusFilter = e.target.value;
+        renderTaskModule();
+      });
+
+      document.getElementById('taskListContainer').addEventListener('change', (e) => {
+        const ckAttr = e.target.getAttribute('data-task-ck');
+        if (!ckAttr) return;
+        const [taskId, ckId] = ckAttr.split('|');
+        const task = appState.tasks.find(t => t.id === taskId);
+        if (task) {
+          const item = task.checklist.find(c => c.id === ckId);
+          if (item) item.done = e.target.checked;
+          renderTaskModule();
+        }
+      });
+
+      document.getElementById('taskListContainer').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-select-task-ai]');
+        if (!btn) return;
+        const taskId = btn.getAttribute('data-select-task-ai');
+        appState.selectedTaskId = taskId;
+        const task = appState.tasks.find(t => t.id === taskId);
+        if (task && task.photoPreset) {
+          appState.selectedPhotoPreset = task.photoPreset;
+          appState.customUploadedPhotoDataUrl = null;
+        }
+        renderTaskModule();
+        showToast(`Đã chọn công việc "${task.title}" để kiểm tra AI.`, 'ai');
+      });
+
+      document.querySelectorAll('.sample-photo-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          appState.selectedPhotoPreset = btn.getAttribute('data-sample-photo');
+          appState.customUploadedPhotoDataUrl = null;
+          renderAiInspectorPanel();
+        });
+      });
+
+      document.getElementById('inputTaskPhotoUpload').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          appState.customUploadedPhotoDataUrl = reader.result;
+          renderAiInspectorPanel();
+          showToast('Đã tải ảnh báo cáo thực tế lên khung kiểm tra AI!', 'success');
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById('btnRunAiEvaluation').addEventListener('click', () => {
+        const overlay = document.getElementById('aiScanOverlay');
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+          const task = appState.tasks.find(t => t.id === appState.selectedTaskId);
+          if (!task) return;
+
+          if (appState.selectedPhotoPreset === 'standard_98') {
+            task.aiScore = 98;
+            task.aiBadge = 'Xuất sắc (98/100)';
+            task.aiComment = 'AI xác nhận: Ga giường căng phẳng 99%, đủ khăn tắm & bộ Amenities, sàn và kính sạch bóng đạt chuẩn 5★ KYMI.';
+          } else if (appState.selectedPhotoPreset === 'warning_79') {
+            task.aiScore = 79;
+            task.aiBadge = 'Khá - Cần chỉnh nhẹ (79/100)';
+            task.aiComment = 'AI phát hiện: Khăn tắm xếp lệch góc (-12đ) và thiếu 1 chai nước suối trên bàn trà (-9đ). Đề nghị bổ sung.';
+          } else {
+            task.aiScore = 62;
+            task.aiBadge = 'Cần làm lại (62/100)';
+            task.aiComment = 'AI cảnh báo: Ga giường còn nhiều nếp nhăn (-20đ), chưa đặt khay Amenities (-10đ), sàn còn ướt (-8đ).';
+          }
+          task.photoPreset = appState.selectedPhotoPreset;
+          renderTaskModule();
+          showToast(`AI đã chấm điểm hoàn tất: ${task.aiScore}/100 điểm!`, 'ai');
+        }, 900);
+      });
+
+      document.getElementById('btnSubmitTaskReport').addEventListener('click', () => {
+        const task = appState.tasks.find(t => t.id === appState.selectedTaskId);
+        if (!task) return;
+        task.checklist.forEach(c => { c.done = true; });
+        if (task.aiScore === null) {
+          task.aiScore = 95;
+          task.aiBadge = 'Xuất sắc (95/100)';
+        }
+        renderTaskModule();
+        showToast(`Đã gửi báo cáo hình ảnh và hoàn thành 100% checklist cho ${task.assignee}!`, 'success');
+      });
+
+      // Modal Giao việc mới
+      document.getElementById('btnOpenNewTaskModal').addEventListener('click', () => {
+        const sel = document.getElementById('newTaskAssignee');
+        sel.innerHTML = appState.staffAccounts.map(s => `<option value="${s.name}">${s.name} (${s.dept})</option>`).join('');
+        document.getElementById('modalCreateTask').classList.remove('hidden');
+      });
+      document.getElementById('btnCloseNewTaskModal').addEventListener('click', () => {
+        document.getElementById('modalCreateTask').classList.add('hidden');
+      });
+      document.getElementById('formCreateNewTask').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const title = document.getElementById('newTaskTitle').value.trim();
+        const dept = document.getElementById('newTaskDept').value;
+        const assignee = document.getElementById('newTaskAssignee').value;
+        const ckRaw = document.getElementById('newTaskChecklistInput').value;
+        const checklist = ckRaw.split(',').map((s, idx) => ({
+          id: 'ck_new_' + Date.now() + '_' + idx,
+          text: s.trim(),
+          done: false
+        })).filter(c => c.text);
+
+        const newId = 't_' + Date.now();
+        appState.tasks.unshift({
+          id: newId,
+          title,
+          dept,
+          assignee,
+          roomCode: 'Khu vực KS',
+          deadline: '17:00',
+          aiScore: null,
+          aiBadge: 'Chờ báo cáo ảnh',
+          aiComment: 'Chưa có ảnh báo cáo nghiệm thu.',
+          photoPreset: 'standard_98',
+          checklist: checklist.length ? checklist : [{ id: 'ck_def', text: 'Thực hiện & chụp ảnh nghiệm thu', done: false }]
+        });
+        appState.selectedTaskId = newId;
+        document.getElementById('modalCreateTask').classList.add('hidden');
+        document.getElementById('newTaskTitle').value = '';
+        renderTaskModule();
+        showToast(`Đã giao công việc mới cho ${assignee}!`, 'success');
+      });
+
+      // ----------------- SỰ KIỆN PHÂN HỆ 2: LỊCH CA -----------------
+      document.querySelectorAll('.sched-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          appState.schedMode = btn.getAttribute('data-sched-mode');
+          document.querySelectorAll('.sched-mode-btn').forEach(b => {
+            const active = b.getAttribute('data-sched-mode') === appState.schedMode;
+            b.className = active
+              ? 'sched-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950'
+              : 'sched-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white';
+          });
+          renderScheduleModule();
+        });
+      });
+
+      document.getElementById('schedDeptFilter').addEventListener('change', (e) => {
+        appState.schedDeptFilter = e.target.value;
+        renderScheduleModule();
+      });
+
+      function cycleStaffShift(staffId, dayIdx) {
+        const staff = appState.staffAccounts.find(s => s.id === staffId);
+        if (!staff) return;
+        const current = staff.weekShifts[dayIdx];
+        const nextIdx = (SHIFT_CYCLE.indexOf(current) + 1) % SHIFT_CYCLE.length;
+        staff.weekShifts[dayIdx] = SHIFT_CYCLE[nextIdx];
+        renderScheduleModule();
+      }
+
+      document.getElementById('schedWeekTableBody').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-week-shift]');
+        if (!btn) return;
+        const [staffId, dIdx] = btn.getAttribute('data-week-shift').split('|');
+        cycleStaffShift(staffId, parseInt(dIdx, 10));
+      });
+
+      document.getElementById('schedMonthTableBody').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-month-shift]');
+        if (!btn) return;
+        const [staffId, dIdx] = btn.getAttribute('data-month-shift').split('|');
+        cycleStaffShift(staffId, parseInt(dIdx, 10));
+      });
+
+      document.getElementById('btnAutoArrangeShifts').addEventListener('click', () => {
+        appState.staffAccounts.forEach((s, idx) => {
+          s.weekShifts = s.weekShifts.map((c, d) => (c === 'OFF' && (idx + d) % 5 !== 0 ? 'S' : c));
+        });
+        renderScheduleModule();
+        showToast('Đã tự động phân bổ nhân sự lấp đầy các ca trống trong tuần!', 'success');
+      });
+
+      document.getElementById('btnPublishSchedule').addEventListener('click', () => {
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        document.getElementById('schedPublishStatusText').textContent =
+          `Đã duyệt & gửi thông báo Zalo OA lúc ${pad(now.getHours())}:${pad(now.getMinutes())} hôm nay`;
+        showToast('Đã duyệt và gửi lịch ca tuần/tháng đến toàn bộ nhân viên!', 'success');
+      });
+
+      document.getElementById('attendanceReportTableBody').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-resolve-att]');
+        if (!btn) return;
+        const rec = appState.attendanceRecords.find(r => r.id === btn.getAttribute('data-resolve-att'));
+        if (rec) {
+          rec.resolved = true;
+          renderScheduleModule();
+          showToast(`Đã xác nhận xử lý bản ghi chấm công của ${rec.staff}.`, 'success');
+        }
+      });
+
+      document.getElementById('btnAddAttendanceRecord').addEventListener('click', () => {
+        appState.attendanceRecords.unshift({
+          id: 'at_' + Date.now(),
+          date: '12/11/2026 · Ca Chiều',
+          staff: 'Đặng Thu Thảo',
+          dept: 'Buồng phòng',
+          type: 'late',
+          scheduleTime: '14:00',
+          actualTime: '14:18',
+          minutes: 18,
+          note: 'Báo cáo tự động từ máy chấm công khuôn mặt',
+          resolved: false
+        });
+        renderScheduleModule();
+        showToast('Đã ghi nhận 1 lượt đi trễ mới vào báo cáo chấm công.', 'warning');
+      });
+
+      // ----------------- SỰ KIỆN PHÂN HỆ 3: SƠ ĐỒ 40 PHÒNG -----------------
+      document.querySelectorAll('.room-cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          appState.roomCatFilter = btn.getAttribute('data-room-cat');
+          document.querySelectorAll('.room-cat-btn').forEach(b => {
+            const active = b.getAttribute('data-room-cat') === appState.roomCatFilter;
+            if (active) {
+              b.classList.add('bg-amber-500', 'text-slate-950');
+              b.classList.remove('bg-[#1f2530]');
+            } else {
+              b.classList.remove('bg-amber-500', 'text-slate-950');
+              b.classList.add('bg-[#1f2530]');
+            }
+          });
+          renderRoomsModule();
+        });
+      });
+
+      document.getElementById('roomStateFilter').addEventListener('change', (e) => {
+        appState.roomStateFilter = e.target.value;
+        renderRoomsModule();
+      });
+
+      document.getElementById('roomSearchInput').addEventListener('input', () => {
+        renderRoomsModule();
+      });
+
+      function updateModalRoomTotalPreview() {
+        const room = appState.rooms.find(r => r.id === appState.editingRoomId);
+        if (!room) return;
+        const stayType = document.getElementById('modalRoomStayType').value;
+        const units = Math.max(1, parseInt(document.getElementById('modalStayUnits').value, 10) || 1);
+        const minibar = Math.max(0, parseInt(document.getElementById('modalMinibarFee').value, 10) || 0);
+
+        let baseRate = room.overnightPrice;
+        if (stayType === 'Theo ngày') baseRate = room.dailyPrice;
+        if (stayType === 'Nghỉ giờ (2h)') baseRate = room.hourlyPrice;
+
+        const total = baseRate * units + minibar;
+        document.getElementById('modalCalculatedTotal').textContent = formatVND(total);
+        return total;
+      }
+
+      document.getElementById('hotelRoomsGrid').addEventListener('click', (e) => {
+        const card = e.target.closest('[data-room-id]');
+        if (!card) return;
+        const room = appState.rooms.find(r => r.id === card.getAttribute('data-room-id'));
+        if (!room) return;
+
+        appState.editingRoomId = room.id;
+        document.getElementById('roomModalCatBadge').textContent = `Hạng ${room.category} · ${room.desc}`;
+        document.getElementById('roomModalTitle').textContent = `Phòng ${room.code}`;
+        document.getElementById('roomModalPriceInfo').textContent =
+          `Nghỉ giờ: ${formatVND(room.hourlyPrice)} · Qua đêm: ${formatVND(room.overnightPrice)} · Theo ngày: ${formatVND(room.dailyPrice)}`;
+
+        document.getElementById('modalRoomStatusSelect').value = room.status === 'available' ? 'occupied' : room.status;
+        document.getElementById('modalRoomStayType').value = room.guest?.stayType || 'Qua đêm';
+        document.getElementById('modalGuestName').value = room.guest?.name || '';
+        document.getElementById('modalGuestPhone').value = room.guest?.phone || '';
+        document.getElementById('modalStayUnits').value = room.guest?.units || 1;
+        document.getElementById('modalMinibarFee').value = room.guest?.minibar || 0;
+
+        updateModalRoomTotalPreview();
+        document.getElementById('modalRoomOperation').classList.remove('hidden');
+      });
+
+      ['modalRoomStayType', 'modalStayUnits', 'modalMinibarFee'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateModalRoomTotalPreview);
+      });
+
+      document.getElementById('btnCloseRoomModal').addEventListener('click', () => {
+        document.getElementById('modalRoomOperation').classList.add('hidden');
+      });
+
+      document.getElementById('formRoomBooking').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const room = appState.rooms.find(r => r.id === appState.editingRoomId);
+        if (!room) return;
+
+        const newStatus = document.getElementById('modalRoomStatusSelect').value;
+        const guestName = document.getElementById('modalGuestName').value.trim() || 'Khách lẻ Walk-in';
+        const guestPhone = document.getElementById('modalGuestPhone').value.trim() || '090x xxx xxx';
+        const stayType = document.getElementById('modalRoomStayType').value;
+        const units = Math.max(1, parseInt(document.getElementById('modalStayUnits').value, 10) || 1);
+        const minibar = Math.max(0, parseInt(document.getElementById('modalMinibarFee').value, 10) || 0);
+
+        room.status = newStatus;
+        if (newStatus === 'occupied' || newStatus === 'reserved') {
+          room.guest = { name: guestName, phone: guestPhone, stayType, units, minibar };
+        } else {
+          room.guest = null;
+        }
+
+        document.getElementById('modalRoomOperation').classList.add('hidden');
+        renderRoomsModule();
+        showToast(`Đã cập nhật phòng ${room.code} (${room.category}) thành công!`, 'success');
+      });
+
+      document.getElementById('btnQuickCheckoutRoom').addEventListener('click', () => {
+        const room = appState.rooms.find(r => r.id === appState.editingRoomId);
+        if (!room) return;
+        const bill = updateModalRoomTotalPreview() || room.overnightPrice;
+        appState.totalRevenue += bill;
+        room.status = 'cleaning';
+        room.guest = null;
+
+        // Tự động tạo công việc dọn phòng cho bộ phận Buồng phòng
+        appState.tasks.unshift({
+          id: 't_checkout_' + Date.now(),
+          title: `Dọn phòng Checkout ${room.code} (Hạng ${room.category})`,
+          dept: 'Buồng phòng',
+          assignee: 'Võ Thị Kim Loan',
+          roomCode: room.code,
+          deadline: 'Ngay sau Checkout',
+          aiScore: null,
+          aiBadge: 'Chờ dọn & chụp ảnh',
+          aiComment: 'Phòng vừa trả, cần thay ga gối và chụp ảnh nghiệm thu bằng AI.',
+          photoPreset: 'standard_98',
+          checklist: [
+            { id: 'c_a_' + Date.now(), text: `Thay ga gối chuẩn hạng ${room.category}`, done: false },
+            { id: 'c_b_' + Date.now(), text: 'Bổ sung nước suối & bộ Amenities', done: false }
+          ]
+        });
+
+        document.getElementById('modalRoomOperation').classList.add('hidden');
+        renderAll();
+        showToast(`Đã trả phòng ${room.code}, thu ${formatVND(bill)} và tự động tạo lệnh dọn phòng!`, 'success');
+      });
+
+      document.getElementById('btnQuickCleanDone').addEventListener('click', () => {
+        const room = appState.rooms.find(r => r.id === appState.editingRoomId);
+        if (!room) return;
+        room.status = 'available';
+        room.guest = null;
+        document.getElementById('modalRoomOperation').classList.add('hidden');
+        renderRoomsModule();
+        showToast(`Phòng ${room.code} đã chuyển sang trạng thái Trống sạch sẵn sàng đón khách!`, 'success');
+      });
+
+      // ----------------- SỰ KIỆN PHÂN HỆ 4: KHO & AI OCR -----------------
+      function executeOcrImportToStock(sourceLabel) {
+        const inv = appState.ocrWorkingInvoice;
+        if (!inv || !inv.items || inv.items.length === 0) {
+          showToast('Chưa có dòng hàng hoá nào để nhập kho!', 'warning');
+          return;
+        }
+
+        const importedSummary = [];
+        inv.items.forEach((line, idx) => {
+          const qty = Math.max(1, parseInt(line.qty, 10) || 1);
+          const price = Math.max(0, parseInt(line.price, 10) || 0);
+          const cleanName = (line.name || '').trim() || `Vật tư mới #${idx + 1}`;
+
+          // Tìm theo stockId hoặc khớp tên thông minh
+          let item = appState.inventory.find(k =>
+            (line.stockId && k.id === line.stockId) ||
+            k.name.toLowerCase() === cleanName.toLowerCase() ||
+            cleanName.toLowerCase().includes(k.name.toLowerCase().slice(0, 10))
+          );
+
+          if (item) {
+            item.importQty += qty;
+            if (price > 0) item.unitPrice = price;
+          } else {
+            // Nếu mặt hàng trên ảnh hoá đơn chưa có trong danh mục, tự động tạo mã vật tư mới
+            const newSkuCode = 'OCR-' + String(appState.inventory.length + 1).padStart(2, '0');
+            appState.inventory.unshift({
+              id: 'k_ocr_' + Date.now() + '_' + idx,
+              code: newSkuCode,
+              name: cleanName,
+              category: line.category || 'Hàng hoá HĐ ảnh',
+              unit: line.unit || 'Cái',
+              openQty: 0,
+              importQty: qty,
+              exportQty: 0,
+              unitPrice: price || 10000,
+              minStock: 10
+            });
+          }
+          importedSummary.push(`+${qty} ${cleanName}`);
+        });
+
+        appState.ocrInvoiceCounter += 1;
+        appState.inventoryLogs.unshift({
+          id: 'lg_' + Date.now(),
+          time: 'Vừa xong',
+          type: 'ocr_import',
+          title: `${sourceLabel} (${inv.code} · ${inv.supplier})`,
+          detail: importedSummary.join(', '),
+          actor: document.getElementById('currentUserBadgeName').textContent
+        });
+
+        const statusPill = document.getElementById('ocrStatusPill');
+        if (statusPill) {
+          statusPill.textContent = `✓ Đã nhập kho (${inv.code})`;
+          statusPill.className = 'px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 text-[10px] font-bold';
+        }
+
+        renderInventoryModule();
+        showToast(`Đã tự động nhập kho ${inv.items.length} mặt hàng từ hoá đơn ${inv.code}!`, 'success');
+      }
+
+      function processUploadedInvoiceImage(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          appState.uploadedOcrImageDataUrl = reader.result;
+          appState.uploadedOcrFileName = file.name || 'anh-hoa-don.jpg';
+
+          // Phân tích tên file hoặc sinh dữ liệu bóc tách từ ảnh hoá đơn vừa tải lên
+          const lower = (file.name || '').toLowerCase();
+          if (lower.includes('nuoc') || lower.includes('minibar') || lower.includes('drink')) {
+            loadPresetIntoWorkingInvoice('inv_minibar');
+          } else if (lower.includes('khan') || lower.includes('giat') || lower.includes('linen')) {
+            loadPresetIntoWorkingInvoice('inv_linen');
+          } else {
+            // Tạo hoá đơn mới bóc tách từ ảnh thực tế của người dùng
+            const randCode = 'HĐ-IMG-' + Math.floor(100 + Math.random() * 900);
+            appState.ocrWorkingInvoice = {
+              code: randCode,
+              supplier: 'NCC Hoá Đơn Ảnh (' + (file.name ? file.name.slice(0, 18) : 'Ảnh chụp') + ')',
+              date: '12/11/2026',
+              items: [
+                { stockId: 'k1', name: 'Bộ bàn chải + kem đánh răng tre KYMI', unit: 'Bộ', category: 'Amenities', qty: 150, price: 4500 },
+                { stockId: 'k4', name: 'Nước suối Aquafina 500ml', unit: 'Chai', category: 'Minibar', qty: 120, price: 4200 },
+                { stockId: 'k7', name: 'Khăn tắm lớn 100% Cotton 70x140cm', unit: 'Cái', category: 'Vải & Giặt ủi', qty: 25, price: 95000 }
+              ]
+            };
+          }
+
+          renderOcrInvoicePreview();
+
+          // Chạy hiệu ứng tia laser AI quét ảnh và tự động nhập kho nếu bật checkbox
+          const laser = document.getElementById('ocrScanningLaser');
+          const prog = document.getElementById('ocrProgressText');
+          laser.classList.remove('hidden');
+          if (prog) prog.textContent = '🔍 AI OCR đang đọc ảnh "' + appState.uploadedOcrFileName + '"...';
+
+          setTimeout(() => {
+            laser.classList.add('hidden');
+            renderOcrInvoicePreview();
+            const autoImport = document.getElementById('chkAutoImportAfterScan')?.checked;
+            if (autoImport) {
+              executeOcrImportToStock('Tự động nhập kho ngay khi tải ảnh');
+            } else {
+              showToast('AI đã bóc tách xong dữ liệu từ ảnh! Kiểm tra bảng dưới rồi bấm "Xác nhận Nhập Kho".', 'ai');
+            }
+          }, 950);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      document.querySelectorAll('.ocr-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          appState.selectedOcrPreset = btn.getAttribute('data-ocr-preset');
+          appState.uploadedOcrImageDataUrl = null;
+          appState.uploadedOcrFileName = '';
+          loadPresetIntoWorkingInvoice(appState.selectedOcrPreset);
+          document.querySelectorAll('.ocr-preset-btn').forEach(b => {
+            const active = b.getAttribute('data-ocr-preset') === appState.selectedOcrPreset;
+            b.classList.toggle('border-sky-500/60', active);
+            b.classList.toggle('border-[#2e3748]', !active);
+          });
+          renderOcrInvoicePreview();
+          showToast('Đã nạp mẫu hoá đơn. Bấm "Quét AI đọc dữ liệu hoá đơn" hoặc "Xác nhận Nhập Kho".', 'info');
+        });
+      });
+
+      document.getElementById('inputOcrInvoiceFile').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        processUploadedInvoiceImage(file);
+        e.target.value = '';
+      });
+
+      // Hỗ trợ bấm vào vùng DropZone hoặc kéo thả file ảnh
+      const dropZone = document.getElementById('ocrDropZone');
+      dropZone.addEventListener('click', () => {
+        document.getElementById('inputOcrInvoiceFile').click();
+      });
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-amber-400', 'bg-[#1a2230]');
+      });
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-amber-400', 'bg-[#1a2230]');
+      });
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-amber-400', 'bg-[#1a2230]');
+        const file = e.dataTransfer?.files?.[0];
+        if (file) processUploadedInvoiceImage(file);
+      });
+
+      // Hỗ trợ dán ảnh trực tiếp từ Clipboard (Ctrl+V) khi đang ở phân hệ Kho
+      window.addEventListener('paste', (e) => {
+        if (appState.activeTab !== 'kho') return;
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            if (blob) processUploadedInvoiceImage(blob);
+            break;
+          }
+        }
+      });
+
+      document.getElementById('ocrInvoiceVisualPreview').addEventListener('click', (e) => {
+        if (e.target.id === 'btnClearUploadedOcrImg') {
+          appState.uploadedOcrImageDataUrl = null;
+          appState.uploadedOcrFileName = '';
+          loadPresetIntoWorkingInvoice(appState.selectedOcrPreset);
+          renderOcrInvoicePreview();
+        }
+      });
+
+      // Chỉnh sửa trực tiếp trên bảng dữ liệu AI bóc tách
+      document.getElementById('ocrExtractedTableContainer').addEventListener('input', (e) => {
+        if (e.target.id === 'ocrInvCodeInput') {
+          appState.ocrWorkingInvoice.code = e.target.value;
+          return;
+        }
+        if (e.target.id === 'ocrInvSupplierInput') {
+          appState.ocrWorkingInvoice.supplier = e.target.value;
+          return;
+        }
+        const idxAttr = e.target.getAttribute('data-ocr-idx');
+        const field = e.target.getAttribute('data-ocr-field');
+        if (idxAttr === null || !field) return;
+        const idx = parseInt(idxAttr, 10);
+        const item = appState.ocrWorkingInvoice.items[idx];
+        if (!item) return;
+        if (field === 'name') {
+          item.name = e.target.value;
+          item.stockId = '';
+        } else if (field === 'qty') {
+          item.qty = Math.max(1, parseInt(e.target.value, 10) || 1);
+        } else if (field === 'price') {
+          item.price = Math.max(0, parseInt(e.target.value, 10) || 0);
+        }
+      });
+
+      document.getElementById('ocrExtractedTableContainer').addEventListener('click', (e) => {
+        const rmBtn = e.target.closest('[data-ocr-remove]');
+        if (!rmBtn) return;
+        const idx = parseInt(rmBtn.getAttribute('data-ocr-remove'), 10);
+        appState.ocrWorkingInvoice.items.splice(idx, 1);
+        renderOcrInvoicePreview();
+      });
+
+      document.getElementById('btnAddOcrRow').addEventListener('click', () => {
+        appState.ocrWorkingInvoice.items.push({
+          stockId: '',
+          name: 'Vật tư mới trên hoá đơn',
+          unit: 'Cái',
+          category: 'Vật tư KS',
+          qty: 20,
+          price: 15000
+        });
+        renderOcrInvoicePreview();
+      });
+
+      document.getElementById('btnRunOcrScan').addEventListener('click', () => {
+        const laser = document.getElementById('ocrScanningLaser');
+        const prog = document.getElementById('ocrProgressText');
+        laser.classList.remove('hidden');
+        if (prog) prog.textContent = '🔍 AI OCR đang quét hình ảnh & đối chiếu danh mục tồn kho...';
+        setTimeout(() => {
+          laser.classList.add('hidden');
+          renderOcrInvoicePreview();
+          const autoImport = document.getElementById('chkAutoImportAfterScan')?.checked;
+          if (autoImport) {
+            executeOcrImportToStock('Tự động nhập kho sau khi quét AI OCR');
+          } else {
+            showToast('AI OCR đã bóc tách dữ liệu hoá đơn! Bấm "Xác nhận Nhập Kho" để cộng tồn.', 'ai');
+          }
+        }, 800);
+      });
+
+      document.getElementById('btnConfirmOcrImport').addEventListener('click', () => {
+        executeOcrImportToStock('Nhập kho xác nhận từ bảng AI OCR');
+      });
+
+      document.getElementById('inventoryStockTableBody').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-quick-stock]');
+        if (!btn) return;
+        const [itemId, mode] = btn.getAttribute('data-quick-stock').split('|');
+        const item = appState.inventory.find(k => k.id === itemId);
+        if (!item) return;
+
+        if (mode === 'import') {
+          item.importQty += 10;
+          showToast(`Đã nhập thêm +10 ${item.unit} ${item.name}`, 'success');
+        } else {
+          item.exportQty += 5;
+          showToast(`Đã xuất -5 ${item.unit} ${item.name} cho bộ phận vận hành`, 'info');
+        }
+        renderInventoryModule();
+      });
+
+      // Modal Xuất / Nhập Kho thủ công
+      document.getElementById('btnOpenManualStockModal').addEventListener('click', () => {
+        const sel = document.getElementById('manualStockItemSelect');
+        sel.innerHTML = appState.inventory.map(i => `<option value="${i.id}">${i.code} - ${i.name}</option>`).join('');
+        document.getElementById('modalManualStock').classList.remove('hidden');
+      });
+      document.getElementById('btnCloseManualStockModal').addEventListener('click', () => {
+        document.getElementById('modalManualStock').classList.add('hidden');
+      });
+      document.getElementById('formManualStock').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const itemId = document.getElementById('manualStockItemSelect').value;
+        const type = document.getElementById('manualStockType').value;
+        const qty = Math.max(1, parseInt(document.getElementById('manualStockQty').value, 10) || 1);
+        const note = document.getElementById('manualStockNote').value.trim() || 'Phiếu kho nội bộ';
+
+        const item = appState.inventory.find(k => k.id === itemId);
+        if (item) {
+          if (type === 'import') item.importQty += qty;
+          else item.exportQty += qty;
+
+          appState.inventoryLogs.unshift({
+            id: 'lg_m_' + Date.now(),
+            time: 'Vừa xong',
+            type,
+            title: `${type === 'import' ? 'Nhập kho' : 'Xuất kho'}: ${item.name}`,
+            detail: `${type === 'import' ? '+' : '-'}${qty} ${item.unit} · ${note}`,
+            actor: document.getElementById('currentUserBadgeName').textContent
+          });
+        }
+        document.getElementById('modalManualStock').classList.add('hidden');
+        renderInventoryModule();
+        showToast('Đã cập nhật phiếu Xuất – Nhập – Tồn thành công!', 'success');
+      });
+
+      // ----------------- SỰ KIỆN PHÂN HỆ 5: TÀI KHOẢN -----------------
+      document.getElementById('accountSearchInput').addEventListener('input', () => {
+        renderAccountsModule();
+      });
+
+      document.getElementById('accountsGridContainer').addEventListener('click', (e) => {
+        const swBtn = e.target.closest('[data-switch-user]');
+        if (swBtn) {
+          const acc = appState.staffAccounts.find(s => s.id === swBtn.getAttribute('data-switch-user'));
+          if (acc) {
+            document.getElementById('currentUserBadgeName').textContent = acc.name;
+            document.getElementById('currentUserBadgeRole').textContent = `(${acc.role})`;
+            showToast(`Đã chuyển phiên đăng nhập sang tài khoản: ${acc.name} (${acc.role})`, 'success');
+          }
+          return;
+        }
+
+        const pinBtn = e.target.closest('[data-reset-pin]');
+        if (pinBtn) {
+          const acc = appState.staffAccounts.find(s => s.id === pinBtn.getAttribute('data-reset-pin'));
+          if (acc) {
+            acc.pin = String(Math.floor(1000 + Math.random() * 9000));
+            renderAccountsModule();
+            showToast(`Đã cấp mã PIN mới (${acc.pin}) cho ${acc.name}!`, 'success');
+          }
+          return;
+        }
+
+        const toggleBtn = e.target.closest('[data-toggle-acc]');
+        if (toggleBtn) {
+          const acc = appState.staffAccounts.find(s => s.id === toggleBtn.getAttribute('data-toggle-acc'));
+          if (acc) {
+            acc.active = !acc.active;
+            renderAccountsModule();
+            showToast(`Đã ${acc.active ? 'mở khóa' : 'tạm khóa'} tài khoản của ${acc.name}.`, 'warning');
+          }
+        }
+      });
+
+      document.getElementById('btnOpenAddAccountModal').addEventListener('click', () => {
+        document.getElementById('modalStaffAccount').classList.remove('hidden');
+      });
+      document.getElementById('btnCloseAccountModal').addEventListener('click', () => {
+        document.getElementById('modalStaffAccount').classList.add('hidden');
+      });
+      document.getElementById('formStaffAccount').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('accInputName').value.trim();
+        const username = document.getElementById('accInputUsername').value.trim();
+        const dept = document.getElementById('accInputDept').value;
+        const role = document.getElementById('accInputRole').value;
+        const phone = document.getElementById('accInputPhone').value.trim();
+        const pin = document.getElementById('accInputPin').value.trim() || '1234';
+
+        appState.staffAccounts.unshift({
+          id: 's_' + Date.now(),
+          name,
+          username,
+          dept,
+          role,
+          phone,
+          pin,
+          active: true,
+          zaloLinked: true,
+          weekShifts: ['S', 'S', 'C', 'C', 'S', 'OFF', 'S']
+        });
+
+        document.getElementById('modalStaffAccount').classList.add('hidden');
+        document.getElementById('formStaffAccount').reset();
+        renderAll();
+        showToast(`Đã tạo tài khoản nhân sự mới cho ${name}!`, 'success');
+      });
+    });
+  </script>
+</body>
+</html>
